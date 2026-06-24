@@ -36,6 +36,7 @@ P5 已把 Windows 单机原型扩展为可配置的“Mac 常驻记忆源 + PC �
 
 - PC -> Mac 记忆写回已通。
 - Mac -> PC 推理委托已通。
+- Mac 测试记忆已清理完成,`/memory-card` 当前 `memory_count=0`。
 - `scripts\dual_node_demo.ps1` 已固化双机冒烟,当前实测 `passed=true`。
 - PC 推理节点已支持启动预热,避免首次委托推理触发模型冷启动回退。
 

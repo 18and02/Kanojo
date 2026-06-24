@@ -236,3 +236,13 @@
   - bundled `pnpm build`: passed
   - `.\scripts\dual_node_demo.ps1`: passed=`true`,Mac `/chat` 委托 PC peer 推理,client_elapsed_ms 约 1035ms
   - `.\scripts\build_release.ps1`: passed,生成 `release/kanojo-source-<commit>.zip` 与 `desktop/out/`
+
+### Goal 阻塞解除: Mac 测试记忆清理完成
+
+- Mac mini 已拉取 `main@5ecad2d`,重新安装 editable 包并重启 `com.kanojo.backend`。
+- Mac 侧 `/maintenance/cleanup-test-memories` 已可见并实际执行,测试记忆已软删除,`/memory-card` 当前 `memory_count=0`。
+- PC 侧复跑:
+  - `.\scripts\cleanup_test_memories.ps1`: `matched_count=0`, `remaining_matches=0`
+  - `.\scripts\cleanup_test_memories.ps1 -Apply`: `deactivated_count=0`
+  - `.\scripts\dual_node_demo.ps1`: passed=`true`,PC peer memory_count=`0`,Mac `/chat` 继续委托 PC peer 推理,client_elapsed_ms 约 974ms
+- 当前五轮 goal 的阻塞点已解除。
