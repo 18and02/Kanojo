@@ -530,6 +530,15 @@ select {
   font-size: 12px;
 }
 
+.node-action-hint {
+  margin: 6px 0 0;
+  border-left: 3px solid #b7d6d2;
+  color: #49606b;
+  font-size: 12px;
+  line-height: 1.45;
+  padding-left: 8px;
+}
+
 .event-list {
   display: flex;
   flex-direction: column;

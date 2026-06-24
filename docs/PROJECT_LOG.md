@@ -296,3 +296,11 @@
 - 自检:
   - `.\scripts\build_desktop_portable.ps1 -SkipBuild`: passed,生成 portable zip
   - `.\scripts\build_release.ps1`: passed,生成 source zip、portable zip 与 `desktop/out/`
+
+### Goal 继续优化循环: peer 断线操作建议
+
+- 桌面端节点拓扑面板在 peer 不可用、写回未就绪、Mac 委托 PC、PC 推理节点等状态下显示下一步检查建议。
+- 该提示用于演示现场快速定位 PC 防火墙、Mac launchd、peer URL、写回策略和冷启动预热问题。
+- 自检:
+  - bundled `pnpm build`: passed
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 42 passed

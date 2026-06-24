@@ -715,6 +715,7 @@ export default function App() {
           : "idle";
   const lipSyncLive2DValue = avatarMouthLevel / 3;
   const nodeAlert = summarizeNodeAlert(nodeStatus);
+  const nodeActionHint = summarizeNodeActionHint(nodeStatus);
 
   const refreshSttStatus = async (fallbackConfigured = config?.stt.configured ?? false) => {
     try {
@@ -2703,6 +2704,7 @@ export default function App() {
                   </button>
                 </div>
                 <p className="evaluation-status">{nodeStatusText}</p>
+                {nodeActionHint ? <p className="node-action-hint">{nodeActionHint}</p> : null}
               </section>
 
               <section className="heartbeat-panel">
@@ -2947,6 +2949,32 @@ function summarizeNodeAlert(status: NodeStatus | null): NodeAlert {
     title: status.node.role,
     detail: status.inference_route_policy.note
   };
+}
+
+function summarizeNodeActionHint(status: NodeStatus | null) {
+  if (!status) {
+    return "先刷新节点状态,确认后端已启动。";
+  }
+  if (status.peer.configured && !status.peer.available) {
+    if (status.node.role === "mac_home") {
+      return "Mac peer 不可用时,先检查 PC 后端是否监听 0.0.0.0:8787、Windows 防火墙是否放行。";
+    }
+    return "PC peer 不可用时,先检查 Mac 后端 launchd 是否运行、Mac 8787 是否可从 PC 访问。";
+  }
+  if (status.memory_write_policy.primary === "peer" && !status.memory_write_policy.migration_ready) {
+    return "写回未就绪时,检查 KANOJO_PEER_BASE_URL、KANOJO_MEMORY_PRIMARY=peer 和离线策略。";
+  }
+  if (
+    status.node.role === "mac_home" &&
+    status.inference_route_policy.primary === "auto" &&
+    status.peer.available
+  ) {
+    return "演示前建议预热 PC peer,避免本地模型冷启动导致首次回退。";
+  }
+  if (status.node.role === "pc_inference" && status.peer.available) {
+    return "当前 PC 可本地推理并写回 Mac,演示前可运行双机冒烟确认 Mac 委托链路。";
+  }
+  return "";
 }
 
 function formatRate(value: number | null | undefined) {
