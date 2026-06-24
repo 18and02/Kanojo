@@ -26,6 +26,23 @@ P5 已把 Windows 单机原型扩展为可配置的“Mac 常驻记忆源 + PC �
 
 ## 自检
 
-- `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 37 passed
+- `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 42 passed
 - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed
 - bundled `pnpm build`: passed
+- `.\scripts\dual_node_demo.ps1`: passed=`true`
+- `.\scripts\build_release.ps1`: passed
+
+## 双机实测基线
+
+- PC -> Mac 记忆写回已通。
+- Mac -> PC 推理委托已通。
+- `scripts\dual_node_demo.ps1` 已固化双机冒烟,当前实测 `passed=true`。
+- PC 推理节点已支持启动预热,避免首次委托推理触发模型冷启动回退。
+
+## 收口文档入口
+
+- `docs\DEMO_RUNBOOK.md`:真实双机联调和演示冒烟流程。
+- `docs\EVALUATION_PLAN.md`:评测指标、导出脚本和论文取数建议。
+- `docs\SHOWCASE_PACKAGE.md`:展示启动、打包和演示包装说明。
+- `docs\DEFENSE_MATERIALS.md`:论文/答辩讲法与问答准备。
+- `docs\FINAL_SELF_CHECK.md`:最终自检、未完成事项和后续优化优先级。

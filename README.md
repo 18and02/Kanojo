@@ -6,6 +6,12 @@
 
 当前双机演示基线见 `docs\DEMO_RUNBOOK.md`:Mac mini 常驻 SQLite 记忆源,PC 作为本地 `qwen2.5:14b` 推理节点,PC 长期记忆写回 Mac,Mac `/chat` 自动委托 PC 推理。
 
+答辩与最终收口入口:
+
+- `docs\DEFENSE_MATERIALS.md`:论文/答辩材料整理,包含创新点、架构讲法、演示顺序和风险应答。
+- `docs\FINAL_SELF_CHECK.md`:最终自检与后续优化清单,包含五轮循环完成项、验证命令和剩余优化优先级。
+- `docs\SHOWCASE_PACKAGE.md`:展示包装、启动顺序和 release 打包方式。
+
 ## 主贡献
 
 记忆驱动的主动交互机制:

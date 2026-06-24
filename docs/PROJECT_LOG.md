@@ -223,3 +223,16 @@
 - 自检:
   - `.\scripts\start_demo_stack.ps1 -Restart -SkipDesktop`: passed,双机冒烟 passed=`true`
   - `.\scripts\build_release.ps1`: passed,生成 `release/kanojo-source-<commit>.zip` 与 `desktop/out/`
+
+### Goal 循环 5/5: 论文答辩材料与最终自检
+
+- 新增 `docs/DEFENSE_MATERIALS.md`,把项目题目、核心创新点、系统架构、演示顺序、论文取数来源和答辩风险应答整理成可直接给答辩准备使用的材料。
+- 新增 `docs/FINAL_SELF_CHECK.md`,汇总当前双机稳定基线、五轮循环完成项、最终自检命令、未完成事项和后续优化优先级。
+- 更新 `docs/P5_CLOSEOUT.md`,补充双机实测、预热能力和收口文档入口。
+- 当前仍需 Mac mini 拉取最新代码后执行测试记忆清理接口;PC 侧接口、脚本和说明已经就绪。PC 侧复测 Mac 维护接口仍返回 404。
+- 自检:
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 42 passed
+  - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed
+  - bundled `pnpm build`: passed
+  - `.\scripts\dual_node_demo.ps1`: passed=`true`,Mac `/chat` 委托 PC peer 推理,client_elapsed_ms 约 1035ms
+  - `.\scripts\build_release.ps1`: passed,生成 `release/kanojo-source-<commit>.zip` 与 `desktop/out/`
