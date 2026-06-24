@@ -40,6 +40,22 @@ cd "G:\Codex env\Kanojo"
 .\scripts\export_evaluation_snapshot.ps1 -SkipReport
 ```
 
+## 多次导出对比
+
+如果需要比较两次演示或两种配置的指标变化,先分别导出到不同目录,再生成对比报告:
+
+```powershell
+.\scripts\export_evaluation_snapshot.ps1 -OutDir exports-before
+.\scripts\export_evaluation_snapshot.ps1 -OutDir exports-after
+.\scripts\compare_evaluation_exports.ps1 -BeforeDir exports-before -AfterDir exports-after
+```
+
+默认会在 `AfterDir` 写入:
+
+```text
+evaluation-comparison.md
+```
+
 如果要导出 Mac mini 的记忆源:
 
 ```powershell

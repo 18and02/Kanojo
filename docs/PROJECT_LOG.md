@@ -277,3 +277,12 @@
 - 自检:
   - bundled `pnpm build`: passed
   - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 42 passed
+
+### Goal 继续优化循环: 评测导出对比
+
+- 新增 `scripts/compare_evaluation_exports.ps1`,可对比两次导出的 `evaluation-summary.json` 和 `node-status.json`。
+- 默认在后一次导出目录生成 `evaluation-comparison.md`,展示节点上下文和关键指标 delta。
+- `docs/EVALUATION_PLAN.md` 增加多次导出对比流程。
+- 自检:
+  - PowerShell 语法检查: passed
+  - `.\scripts\compare_evaluation_exports.ps1 -BeforeDir exports-report-test -AfterDir exports-loop2`: passed
