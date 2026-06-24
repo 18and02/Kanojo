@@ -599,6 +599,13 @@ P4.3 创建当前记忆名片快照。后端会调用同一份 `/memory-card` �
 
 返回最近的记忆抽取审计记录,用于检查"为什么存 / 为什么没存"。
 
+查询参数:
+
+- `limit`:返回条数,默认 20,最大 100。
+- `offset`:分页偏移,默认 0。
+- `decision`:可选,`accepted` / `pending` / `rejected`。
+- `q`:可选搜索词,匹配原文、候选内容、方法和原因。
+
 ## `POST /memory-audits/{audit_id}/approve`
 
 人工批准一条待确认候选记忆。请求体可省略;如果需要批准前编辑候选内容,传入 `candidate`。

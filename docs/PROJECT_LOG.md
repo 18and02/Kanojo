@@ -382,3 +382,14 @@
 - `docs/DEMO_RUNBOOK.md` 与 `docs/FINAL_SELF_CHECK.md` 更新桌面诊断和受控写入说明。
 - 自检:
   - bundled `pnpm build`: passed
+
+### Goal 继续优化循环: 记忆审计历史筛选与分页
+
+- `GET /memory-audits` 新增 `limit`、`offset`、`decision` 和 `q` 查询参数。
+- 审计记录返回 `decision=accepted|pending|rejected`,避免手动拒绝后仍被桌面端当作待确认项。
+- 桌面端记忆审计页新增状态筛选、关键词搜索和“加载更多”。
+- `docs/API_CONTRACT.md` 与 `docs/FINAL_SELF_CHECK.md` 更新审计历史查询说明。
+- 自检:
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 48 passed
+  - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed
+  - bundled `pnpm build`: passed

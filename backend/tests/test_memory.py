@@ -1038,6 +1038,59 @@ def test_batch_memory_audits_rejects_multiple_candidates(tmp_path, monkeypatch) 
     assert store.memory_audit_by_id(second_audit_id)["reason"] == "batch rejected"
 
 
+def test_memory_audits_support_filter_search_and_pagination(tmp_path, monkeypatch) -> None:
+    from kanojo_agent import main
+
+    store = MemoryStore(tmp_path / "audit-query.db")
+    first_message_id = store.add_message("default", "user", "我喜欢钢琴")
+    second_message_id = store.add_message("default", "user", "今天测试无效")
+    accepted_audit_id = store.add_memory_audit(
+        source_message_id=first_message_id,
+        method="manual_test",
+        raw_text="我喜欢钢琴",
+        candidate={
+            "kind": "preference",
+            "content": "用户喜欢钢琴",
+            "importance": 0.7,
+            "confidence": 0.8,
+        },
+        accepted=True,
+        reason="accepted",
+        memory_id=1,
+    )
+    pending_audit_id = store.add_memory_audit(
+        source_message_id=second_message_id,
+        method="manual_test",
+        raw_text="今天测试无效",
+        candidate={
+            "kind": "event",
+            "content": "用户今天测试无效",
+            "importance": 0.3,
+            "confidence": 0.7,
+        },
+        accepted=False,
+        reason="pending manual review",
+        memory_id=None,
+    )
+    monkeypatch.setattr(main, "store", store)
+    client = TestClient(main.app)
+
+    pending = client.get("/memory-audits", params={"accepted": False})
+    pending_decision = client.get("/memory-audits", params={"decision": "pending"})
+    searched = client.get("/memory-audits", params={"q": "钢琴"})
+    paged = client.get("/memory-audits", params={"limit": 1, "offset": 1})
+
+    assert pending.status_code == 200
+    assert [item["id"] for item in pending.json()["items"]] == [pending_audit_id]
+    assert pending_decision.status_code == 200
+    assert pending_decision.json()["items"][0]["decision"] == "pending"
+    assert searched.status_code == 200
+    assert [item["id"] for item in searched.json()["items"]] == [accepted_audit_id]
+    assert paged.status_code == 200
+    assert paged.json()["offset"] == 1
+    assert len(paged.json()["items"]) == 1
+
+
 def test_cleanup_test_memories_dry_run_and_apply(tmp_path, monkeypatch) -> None:
     from kanojo_agent import main
 

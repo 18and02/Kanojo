@@ -308,6 +308,7 @@ class MemoryStore:
         item["accepted"] = bool(item["accepted"])
         item["candidate"] = json.loads(item["candidate_json"]) if item.get("candidate_json") else None
         del item["candidate_json"]
+        item["decision"] = self._memory_audit_decision(item)
         return item
 
     def update_memory_audit_decision(
@@ -535,17 +536,43 @@ class MemoryStore:
         result["markdown"] = memory_reflection_markdown(result)
         return result
 
-    def recent_memory_audits(self, limit: int = 20) -> list[dict[str, Any]]:
+    def recent_memory_audits(
+        self,
+        limit: int = 20,
+        *,
+        offset: int = 0,
+        accepted: bool | None = None,
+        decision: str | None = None,
+        query: str | None = None,
+    ) -> list[dict[str, Any]]:
+        where = []
+        params: list[Any] = []
+        if accepted is not None:
+            where.append("accepted = ?")
+            params.append(1 if accepted else 0)
+        if decision == "accepted":
+            where.append("(accepted = 1 OR memory_id IS NOT NULL)")
+        elif decision == "pending":
+            where.append("accepted = 0 AND memory_id IS NULL AND reason LIKE 'pending%'")
+        elif decision == "rejected":
+            where.append("accepted = 0 AND memory_id IS NULL AND reason NOT LIKE 'pending%'")
+        if query:
+            where.append("(raw_text LIKE ? OR candidate_json LIKE ? OR reason LIKE ? OR method LIKE ?)")
+            pattern = f"%{query}%"
+            params.extend([pattern, pattern, pattern, pattern])
+        where_sql = f"WHERE {' AND '.join(where)}" if where else ""
+        params.extend([limit, offset])
         with self.connect() as conn:
             rows = conn.execute(
-                """
+                f"""
                 SELECT id, source_message_id, method, raw_text, candidate_json,
                        accepted, reason, memory_id, created_at
                 FROM memory_audits
+                {where_sql}
                 ORDER BY id DESC
-                LIMIT ?
+                LIMIT ? OFFSET ?
                 """,
-                (limit,),
+                tuple(params),
             ).fetchall()
         audits = []
         for row in rows:
@@ -556,8 +583,18 @@ class MemoryStore:
             else:
                 item["candidate"] = None
             del item["candidate_json"]
+            item["decision"] = self._memory_audit_decision(item)
             audits.append(item)
         return audits
+
+    @staticmethod
+    def _memory_audit_decision(item: dict[str, Any]) -> str:
+        if item.get("accepted") or item.get("memory_id"):
+            return "accepted"
+        reason = str(item.get("reason") or "").lower()
+        if reason.startswith("pending"):
+            return "pending"
+        return "rejected"
 
     def recent_messages(self, session_id: str, limit: int = 12) -> list[dict[str, Any]]:
         with self.connect() as conn:

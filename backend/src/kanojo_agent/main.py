@@ -7,7 +7,7 @@ import json
 from time import perf_counter
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -637,8 +637,27 @@ def compare_memory_card_snapshot(snapshot_id: int) -> dict[str, Any]:
 
 
 @app.get("/memory-audits")
-def recent_memory_audits(limit: int = 20) -> dict[str, Any]:
-    return {"items": store.recent_memory_audits(limit=limit)}
+def recent_memory_audits(
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    accepted: bool | None = None,
+    decision: str | None = Query(default=None, pattern="^(accepted|pending|rejected)$"),
+    q: str | None = Query(default=None, max_length=80),
+) -> dict[str, Any]:
+    return {
+        "items": store.recent_memory_audits(
+            limit=limit,
+            offset=offset,
+            accepted=accepted,
+            decision=decision,
+            query=q,
+        ),
+        "limit": limit,
+        "offset": offset,
+        "accepted": accepted,
+        "decision": decision,
+        "q": q,
+    }
 
 
 def memory_audit_candidate_payload(

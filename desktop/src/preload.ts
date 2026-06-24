@@ -47,6 +47,13 @@ type MemoryAuditCandidatePatch = {
   confidence: number;
 };
 
+type MemoryAuditQuery = {
+  limit?: number;
+  offset?: number;
+  decision?: "accepted" | "pending" | "rejected";
+  q?: string;
+};
+
 contextBridge.exposeInMainWorld("kanojoApi", {
   chat: async (text: string) => {
     const response = await fetch(`${backendBaseUrl}/chat`, {
@@ -157,8 +164,17 @@ contextBridge.exposeInMainWorld("kanojoApi", {
     }
     return response.json();
   },
-  memoryAudits: async (limit = 20) => {
-    const response = await fetch(`${backendBaseUrl}/memory-audits?limit=${limit}`);
+  memoryAudits: async (query: MemoryAuditQuery = {}) => {
+    const params = new URLSearchParams();
+    params.set("limit", String(query.limit ?? 20));
+    params.set("offset", String(query.offset ?? 0));
+    if (query.decision) {
+      params.set("decision", query.decision);
+    }
+    if (query.q?.trim()) {
+      params.set("q", query.q.trim());
+    }
+    const response = await fetch(`${backendBaseUrl}/memory-audits?${params.toString()}`);
     if (!response.ok) {
       throw new Error(`Memory audits request failed: ${response.status}`);
     }
