@@ -401,3 +401,11 @@
 - `docs/DEMO_RUNBOOK.md` 与 `docs/FINAL_SELF_CHECK.md` 增加脚本说明。
 - 自检:
   - PowerShell 语法检查: passed
+
+### Goal 继续优化循环: 评测覆盖率 Scorecard
+
+- `scripts/write_evaluation_report.ps1` 新增 Coverage Scorecard,自动检查双机 peer、peer 推理路由、记忆名片、记忆命中、主动心跳、形象首播、口型同步和打断证据。
+- `docs/EVALUATION_PLAN.md` 说明 Scorecard 的覆盖项和 TODO 含义。
+- 自检:
+  - PowerShell 语法检查: passed
+  - `.\scripts\export_evaluation_snapshot.ps1 -OutDir exports-scorecard-test`: passed,生成 `evaluation-report.md`

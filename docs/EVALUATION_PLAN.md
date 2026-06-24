@@ -34,6 +34,16 @@ cd "G:\Codex env\Kanojo"
 
 `evaluation-report.md` 是自动生成的 Markdown 摘要,可直接作为论文/答辩取数材料的索引页。
 
+报告中包含 `Coverage Scorecard`,自动检查:
+
+- 双机 peer 健康状态。
+- 聊天是否出现 peer 推理路由。
+- 记忆名片是否已有长期记忆。
+- 聊天记忆命中率是否非零。
+- 主动心跳、形象首播、口型同步和打断事件是否有记录。
+
+Scorecard 的 `TODO` 不是脚本失败,而是提示当前导出样本还缺少对应演示证据。答辩前应把缺项补齐后重新导出。
+
 如果只需要原始 JSON / CSV,可以跳过报告:
 
 ```powershell

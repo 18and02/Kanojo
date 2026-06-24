@@ -43,6 +43,30 @@ function Add-MetricRow {
     $Lines.Add("| $Area | $Metric | $(Format-Value $Value $Suffix) |")
 }
 
+function Test-AtLeast {
+    param($Value, [double]$Minimum)
+    if ($null -eq $Value) {
+        return $false
+    }
+    return ([double]$Value) -ge $Minimum
+}
+
+function Add-CoverageRow {
+    param(
+        [System.Collections.Generic.List[string]]$Lines,
+        [string]$Layer,
+        [string]$Check,
+        [bool]$Passed,
+        [string]$Evidence
+    )
+    $script:CoverageTotal += 1
+    if ($Passed) {
+        $script:CoveragePassed += 1
+    }
+    $Status = if ($Passed) { "PASS" } else { "TODO" }
+    $Lines.Add("| $Layer | $Check | $Status | $Evidence |")
+}
+
 $Summary = Read-JsonFile "evaluation-summary.json"
 $NodeStatus = Read-JsonFile "node-status.json"
 $Events = Read-JsonFile "evaluation-events.json"
@@ -97,6 +121,24 @@ Add-MetricRow $Lines "Avatar" "Lip sync count" $Summary.avatar.lip_sync_count
 Add-MetricRow $Lines "Avatar" "Average mouth active" $Summary.avatar.avg_mouth_active_ms "ms"
 Add-MetricRow $Lines "Avatar" "Average mouth active ratio" $Summary.avatar.avg_mouth_active_ratio
 Add-MetricRow $Lines "Avatar" "Interrupt count" $Summary.avatar.interrupt_count
+$Lines.Add("")
+$Lines.Add("## Coverage Scorecard")
+$Lines.Add("")
+$Lines.Add("| Layer | Check | Status | Evidence |")
+$Lines.Add("| --- | --- | --- | --- |")
+$CoverageTotal = 0
+$CoveragePassed = 0
+$PeerRouteCount = @($ChatRoutes | Where-Object { $_.selected -eq "peer" }).Count
+Add-CoverageRow $Lines "Dual node" "Peer health is available" ([bool]$NodeStatus.peer.available) "peer=$($NodeStatus.peer.base_url)"
+Add-CoverageRow $Lines "Inference" "At least one chat used peer route" ($PeerRouteCount -gt 0) "peer route count=$PeerRouteCount"
+Add-CoverageRow $Lines "Memory" "Memory card has durable entries" (Test-AtLeast $MemoryCard.memory_count 1) "memory_count=$($MemoryCard.memory_count)"
+Add-CoverageRow $Lines "Memory" "Chat memory hit rate is non-zero" (Test-AtLeast $Summary.chat.memory_hit_rate 0.01) "hit_rate=$($Summary.chat.memory_hit_rate)"
+Add-CoverageRow $Lines "Heartbeat" "Heartbeat events were recorded" (Test-AtLeast $Summary.heartbeat.count 1) "count=$($Summary.heartbeat.count)"
+Add-CoverageRow $Lines "Avatar" "Voice playback start was recorded" (Test-AtLeast $Summary.avatar.voice_start_count 1) "voice_start_count=$($Summary.avatar.voice_start_count)"
+Add-CoverageRow $Lines "Avatar" "Lip sync activity was recorded" (Test-AtLeast $Summary.avatar.lip_sync_count 1) "lip_sync_count=$($Summary.avatar.lip_sync_count)"
+Add-CoverageRow $Lines "Avatar" "Interrupt-to-silence was recorded" (Test-AtLeast $Summary.avatar.interrupt_count 1) "interrupt_count=$($Summary.avatar.interrupt_count)"
+$Lines.Add("")
+$Lines.Add("- Coverage score: $CoveragePassed / $CoverageTotal")
 $Lines.Add("")
 $Lines.Add("## Inference Routes")
 $Lines.Add("")
