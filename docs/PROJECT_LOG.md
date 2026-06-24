@@ -336,3 +336,19 @@
   - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 44 passed
   - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed
   - bundled `pnpm build`: passed
+
+### Goal 继续优化循环: peer 候选地址扫描
+
+- 新增 `scripts/find_peer.ps1` 与 `scripts/find_peer.sh`,用于在现场 IP 变化时扫描 Mac/PC 候选节点。
+- 扫描结果包含 `preferred_role`、`best` 和完整 `results`,并按候选顺序稳定选择最佳地址。
+- 支持按目标角色选择:
+  - PC 侧找 Mac 记忆节点: `.\scripts\find_peer.ps1 -PreferredRole mac_home`
+  - Mac 侧找 PC 推理节点: `bash scripts/find_peer.sh --role pc_inference`
+- `docs/DEMO_RUNBOOK.md` 与 `docs/MAC_MINI_CODEX_SETUP.md` 增加对应排障命令。
+- 自检:
+  - PowerShell 语法检查: passed
+  - bash 语法检查: passed
+  - `.\scripts\find_peer.ps1 -PreferredRole mac_home`: best=`http://kanojo-mac.local:8787`,role=`mac_home`
+  - `.\scripts\find_peer.ps1 -PreferredRole pc_inference`: best=`http://kanojo-pc.local:8787`,role=`pc_inference`
+  - `bash scripts/find_peer.sh --role mac_home`: best=`http://kanojo-mac.local:8787`,role=`mac_home`
+  - `bash scripts/find_peer.sh --role pc_inference`: best=`http://kanojo-pc.local:8787`,role=`pc_inference`

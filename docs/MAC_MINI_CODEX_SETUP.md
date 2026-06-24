@@ -296,6 +296,12 @@ http://kanojo-mac.local:8787/health
 http://kanojo-mac-alt.local:8787/health
 ```
 
+也可以在 PC 侧直接扫描候选地址:
+
+```powershell
+.\scripts\find_peer.ps1 -PreferredRole mac_home
+```
+
 判断标准:
 
 - PC 能访问 `/health`,说明 Mac 后端已对局域网开放。

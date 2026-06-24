@@ -72,6 +72,19 @@ KANOJO_INFERENCE_PRIMARY=local
 .\scripts\dual_node_demo.ps1
 ```
 
+如果现场 IP 变化,先扫描候选节点。PC 侧通常找 Mac 记忆节点:
+
+```powershell
+.\scripts\find_peer.ps1 -PreferredRole mac_home
+```
+
+Mac 侧通常找 PC 推理节点:
+
+```bash
+cd ~/Projects/Kanojo
+bash scripts/find_peer.sh --role pc_inference
+```
+
 预期结果:
 
 ```json
