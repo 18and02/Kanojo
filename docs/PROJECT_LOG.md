@@ -107,3 +107,16 @@
 - 本地初始化 git 仓库并创建初始提交,用于后续推送到 GitHub 后让 Mac mini 直接 `git clone`。
 - 仓库忽略规则确认不会提交 `backend/.env`、SQLite 数据库、虚拟环境、前端依赖和构建产物。
 - GitHub 私有仓库已创建为 `https://github.com/18and02/Kanojo`,并把 Mac mini 指导文档更新为含实际仓库地址、Mac IP、主机名和 PC 验证 URL 的最新版。
+
+### PC 推理节点联调
+
+- PC 本地 `backend/.env` 已配置为 `KANOJO_NODE_ROLE=pc_inference`。
+- PC 本地推理使用 `KANOJO_LLM_BASE_URL=http://127.0.0.1:11434/v1` 与 `KANOJO_LLM_MODEL=qwen2.5:14b`。
+- PC 记忆写入策略已改为 `KANOJO_MEMORY_PRIMARY=peer` 与 `KANOJO_OFFLINE_WRITE_BEHAVIOR=reject`,peer 指向 `http://kanojo-mac.local:8787`。
+- 自检:
+  - `git pull --ff-only`: already up to date
+  - `pip install -e ".[dev]"`: passed
+  - PC `/node/status`: role=`pc_inference`, memory primary=`peer`, peer available=`true`
+  - PC `/node/peer/memory-card`: configured=`true`, available=`true`, Mac memory_count 可返回
+  - PC `/memories` 测试写入: target=`peer`, remote target=`local`,Mac memory_count 从 0 增至 1
+  - PC 本地 LLM `/v1/models`: `qwen2.5:14b` 可用
