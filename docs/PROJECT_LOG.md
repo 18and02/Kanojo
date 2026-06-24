@@ -173,3 +173,19 @@
 - 自检:
   - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 42 passed
   - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed
+
+### Goal 循环 2/5: 演示闭环与真实双机联调固化
+
+- 新增 `scripts/dual_node_demo.py` 与 `scripts/dual_node_demo.ps1`,把双机演示冒烟固化为一键脚本。
+- 冒烟覆盖:
+  - PC / Mac `/health`
+  - PC / Mac `/node/status`
+  - PC `/node/inference/prewarm`
+  - PC `/node/peer/memory-card`
+  - Mac `/chat` 是否委托 PC peer 推理
+- 新增 `docs/DEMO_RUNBOOK.md`,整理启动顺序、冒烟命令、写回演示、测试记忆清理和故障判断。
+- README 增加双机演示基线和一键冒烟入口。
+- 真实冒烟结果:
+  - `.\scripts\dual_node_demo.ps1`: passed=`true`
+  - Mac `/chat`: route_selected=`peer`, llm_model=`qwen2.5:14b`, llm_configured=`true`
+  - PC 预热后 Mac chat 客户端观测耗时约 961ms
