@@ -336,6 +336,23 @@ curl -X POST http://127.0.0.1:8787/chat \
 
 如果 PC peer 在线,响应里的 `inference_route.selected` 应该是 `peer`。如果 PC 不在线,应该回退本地,并在 `inference_route.reason` 里说明 peer 失败。
 
+真实联调确认:
+
+- Mac 能访问 `http://kanojo-pc.local:8787/health`。
+- Mac `.env` 已设置 `KANOJO_INFERENCE_PRIMARY=auto` 与 `KANOJO_PEER_BASE_URL=http://kanojo-pc.local:8787`。
+- Mac `/node/status` 显示 `peer.available=true`。
+- Mac `/chat` 最终返回 `inference_route.selected=peer`, `llm_model=qwen2.5:14b`, `llm_configured=true`。
+
+如果第一次 `/chat` 约 5 秒超时并回退本地,通常是 PC 本地模型冷启动。先在 Mac 上预热 PC 推理节点:
+
+```bash
+curl -X POST http://kanojo-pc.local:8787/node/inference/chat \
+  -H "Content-Type: application/json" \
+  -d '{"text":"预热 PC 推理节点","memories":[]}'
+```
+
+预热后重新调用 Mac `/chat`,应稳定走 `selected=peer`。
+
 ## 10. 常见问题
 
 ### clone 私有仓库失败

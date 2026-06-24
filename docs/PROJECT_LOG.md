@@ -148,3 +148,14 @@
   - `http://kanojo-pc.local:8787/health`: ok
   - `http://kanojo-pc.local:8787/node/status`: role=`pc_inference`, peer available=`true`
   - `http://kanojo-pc.local:8787/node/inference/chat`: route.selected=`local`, llm_model=`qwen2.5:14b`
+- Mac -> PC 反向委托推理已由 Mac mini 侧复核成功:
+  - Mac 能访问 `http://kanojo-pc.local:8787/health`
+  - Mac `.env`: `KANOJO_INFERENCE_PRIMARY=auto`, `KANOJO_PEER_BASE_URL=http://kanojo-pc.local:8787`
+  - Mac `/node/status`: peer.available=`true`
+  - Mac `/chat`: inference_route.selected=`peer`, llm_model=`qwen2.5:14b`, llm_configured=`true`
+  - 首次 `/chat` 曾因 PC 模型冷启动 5 秒超时回退;预热 PC `/node/inference/chat` 后稳定走 peer
+- 当前双机闭环基线:
+  - Mac mini 常驻 SQLite 记忆真相源
+  - PC 作为本地重推理节点
+  - PC 长期记忆写回 Mac
+  - Mac chat 自动委托 PC 推理
