@@ -599,6 +599,43 @@ P4.3 创建当前记忆名片快照。后端会调用同一份 `/memory-card` �
 
 返回最近的记忆抽取审计记录,用于检查"为什么存 / 为什么没存"。
 
+## `POST /memory-audits/{audit_id}/approve`
+
+人工批准一条待确认候选记忆。请求体可省略;如果需要批准前编辑候选内容,传入 `candidate`。
+
+```json
+{
+  "candidate": {
+    "kind": "preference",
+    "content": "用户喜欢柔和普通话女声",
+    "importance": 0.6,
+    "confidence": 0.75
+  }
+}
+```
+
+## `POST /memory-audits/{audit_id}/reject`
+
+人工拒绝一条待确认候选记忆。
+
+```json
+{
+  "reason": "rejected manually"
+}
+```
+
+## `POST /memory-audits/batch`
+
+批量批准或拒绝多条候选记忆。批量批准使用候选原文;需要编辑时先使用单条批准接口。
+
+```json
+{
+  "audit_ids": [12, 13],
+  "action": "reject",
+  "reason": "batch rejected manually"
+}
+```
+
 ## `POST /heartbeat/tick`
 
 触发一次心跳评估。P1 由桌面端或后台定时器调用。P5.5 起,最近桌面活动会作为主动心跳抑制条件,但不会直接触发通知。

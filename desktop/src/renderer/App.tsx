@@ -191,6 +191,30 @@ type MemoryAuditApprovalResult = {
   audit?: MemoryAuditItem;
 };
 
+type MemoryAuditCandidatePatch = Pick<
+  MemoryDecision["candidate"],
+  "kind" | "content" | "importance" | "confidence"
+>;
+
+type MemoryAuditRejectionResult = {
+  rejected: boolean;
+  reason?: string;
+  audit?: MemoryAuditItem;
+};
+
+type MemoryAuditBatchResult = {
+  action: "approve" | "reject";
+  requested_count: number;
+  ok_count: number;
+  items: Array<{
+    audit_id: number;
+    ok: boolean;
+    result?: MemoryAuditApprovalResult | MemoryAuditRejectionResult;
+    status_code?: number;
+    detail?: unknown;
+  }>;
+};
+
 type MemoryExtraction = {
   method: string;
   error?: string | null;
@@ -493,7 +517,16 @@ type KanojoApi = {
   ) => Promise<MemoryUpdateResult>;
   deactivateMemory: (memoryId: number) => Promise<MemoryDeactivationResult>;
   memoryAudits: (limit?: number) => Promise<{ items: MemoryAuditItem[] }>;
-  approveMemoryAudit: (auditId: number) => Promise<MemoryAuditApprovalResult>;
+  approveMemoryAudit: (
+    auditId: number,
+    candidate?: MemoryAuditCandidatePatch
+  ) => Promise<MemoryAuditApprovalResult>;
+  rejectMemoryAudit: (auditId: number, reason?: string) => Promise<MemoryAuditRejectionResult>;
+  batchMemoryAudits: (
+    auditIds: number[],
+    action: "approve" | "reject",
+    reason?: string
+  ) => Promise<MemoryAuditBatchResult>;
   memoryCardSnapshots: () => Promise<{ items: MemoryCardSnapshotSummary[] }>;
   createMemoryCardSnapshot: (label?: string) => Promise<MemoryCardSnapshot>;
   memoryCardSnapshotCompare: (snapshotId: number) => Promise<MemoryCardComparison>;
@@ -637,12 +670,36 @@ const browserBackendApi: KanojoApi = {
     }
     return response.json();
   },
-  approveMemoryAudit: async (auditId: number) => {
+  approveMemoryAudit: async (auditId: number, candidate?: MemoryAuditCandidatePatch) => {
     const response = await fetch(`${backendBaseUrl}/memory-audits/${auditId}/approve`, {
-      method: "POST"
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(candidate ? { candidate } : {})
     });
     if (!response.ok) {
       throw new Error(`Memory audit approval failed: ${response.status}`);
+    }
+    return response.json();
+  },
+  rejectMemoryAudit: async (auditId: number, reason = "rejected manually") => {
+    const response = await fetch(`${backendBaseUrl}/memory-audits/${auditId}/reject`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason })
+    });
+    if (!response.ok) {
+      throw new Error(`Memory audit rejection failed: ${response.status}`);
+    }
+    return response.json();
+  },
+  batchMemoryAudits: async (auditIds, action, reason) => {
+    const response = await fetch(`${backendBaseUrl}/memory-audits/batch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ audit_ids: auditIds, action, reason })
+    });
+    if (!response.ok) {
+      throw new Error(`Memory audit batch request failed: ${response.status}`);
     }
     return response.json();
   },
@@ -761,6 +818,10 @@ export default function App() {
   const [memoryAudits, setMemoryAudits] = useState<MemoryAuditItem[]>([]);
   const [memoryAuditStatus, setMemoryAuditStatus] = useState("未刷新");
   const [approvingAuditId, setApprovingAuditId] = useState<number | null>(null);
+  const [rejectingAuditId, setRejectingAuditId] = useState<number | null>(null);
+  const [selectedAuditIds, setSelectedAuditIds] = useState<number[]>([]);
+  const [auditDrafts, setAuditDrafts] = useState<Record<number, string>>({});
+  const [batchAuditBusy, setBatchAuditBusy] = useState(false);
   const [memoryCardSnapshots, setMemoryCardSnapshots] = useState<MemoryCardSnapshotSummary[]>([]);
   const [memoryCardComparison, setMemoryCardComparison] = useState<MemoryCardComparison | null>(
     null
@@ -994,6 +1055,26 @@ export default function App() {
     try {
       const result = await api.memoryAudits(20);
       setMemoryAudits(result.items);
+      setSelectedAuditIds((ids) =>
+        ids.filter((id) =>
+          result.items.some((audit) => audit.id === id && !audit.accepted && !audit.memory_id)
+        )
+      );
+      setAuditDrafts((drafts) => {
+        const next = { ...drafts };
+        const itemIds = new Set(result.items.map((audit) => audit.id));
+        for (const audit of result.items) {
+          if (audit.candidate && next[audit.id] === undefined) {
+            next[audit.id] = audit.candidate.content;
+          }
+        }
+        for (const id of Object.keys(next)) {
+          if (!itemIds.has(Number(id))) {
+            delete next[Number(id)];
+          }
+        }
+        return next;
+      });
       setMemoryAuditStatus(`已刷新 ${new Date().toLocaleTimeString()}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "memory audits failed";
@@ -1001,11 +1082,34 @@ export default function App() {
     }
   };
 
+  const updateAuditDraft = (auditId: number, content: string) => {
+    setAuditDrafts((drafts) => ({ ...drafts, [auditId]: content }));
+  };
+
+  const toggleAuditSelection = (auditId: number, selected: boolean) => {
+    setSelectedAuditIds((ids) =>
+      selected ? Array.from(new Set([...ids, auditId])) : ids.filter((id) => id !== auditId)
+    );
+  };
+
+  const editedAuditCandidate = (audit: MemoryAuditItem): MemoryAuditCandidatePatch | undefined => {
+    const draftContent = auditDrafts[audit.id]?.trim();
+    if (!audit.candidate || !draftContent || draftContent === audit.candidate.content) {
+      return undefined;
+    }
+    return {
+      kind: audit.candidate.kind,
+      content: draftContent,
+      importance: audit.candidate.importance,
+      confidence: audit.candidate.confidence
+    };
+  };
+
   const approveMemoryAudit = async (audit: MemoryAuditItem) => {
     setApprovingAuditId(audit.id);
     setMemoryAuditStatus(`正在批准 #${audit.id}`);
     try {
-      const result = await api.approveMemoryAudit(audit.id);
+      const result = await api.approveMemoryAudit(audit.id, editedAuditCandidate(audit));
       setMemoryAuditStatus(
         result.approved ? `已批准 #${audit.id} -> 记忆 #${result.memory_id}` : `未批准 #${audit.id}`
       );
@@ -1015,6 +1119,59 @@ export default function App() {
       setMemoryAuditStatus(message);
     } finally {
       setApprovingAuditId(null);
+    }
+  };
+
+  const rejectMemoryAudit = async (audit: MemoryAuditItem) => {
+    setRejectingAuditId(audit.id);
+    setMemoryAuditStatus(`正在拒绝 #${audit.id}`);
+    try {
+      const result = await api.rejectMemoryAudit(audit.id, "rejected manually");
+      setMemoryAuditStatus(result.rejected ? `已拒绝 #${audit.id}` : `未拒绝 #${audit.id}`);
+      await refreshMemoryAudits();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "reject memory audit failed";
+      setMemoryAuditStatus(message);
+    } finally {
+      setRejectingAuditId(null);
+    }
+  };
+
+  const batchMemoryAudits = async (action: "approve" | "reject") => {
+    if (selectedAuditIds.length === 0) {
+      setMemoryAuditStatus("未选择审计项");
+      return;
+    }
+    setBatchAuditBusy(true);
+    setMemoryAuditStatus(action === "approve" ? "批量批准中" : "批量拒绝中");
+    try {
+      let okCount = 0;
+      if (action === "approve") {
+        const selectedAudits = memoryAudits.filter((audit) => selectedAuditIds.includes(audit.id));
+        for (const audit of selectedAudits) {
+          const result = await api.approveMemoryAudit(audit.id, editedAuditCandidate(audit));
+          if (result.approved) {
+            okCount += 1;
+          }
+        }
+      } else {
+        const result = await api.batchMemoryAudits(
+          selectedAuditIds,
+          "reject",
+          "batch rejected manually"
+        );
+        okCount = result.ok_count;
+      }
+      setMemoryAuditStatus(
+        `${action === "approve" ? "批量批准" : "批量拒绝"} ${okCount}/${selectedAuditIds.length}`
+      );
+      setSelectedAuditIds([]);
+      await Promise.all([refreshMemoryAudits(), refreshMemoryCard(), refreshMemoryReflection()]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "batch memory audit failed";
+      setMemoryAuditStatus(message);
+    } finally {
+      setBatchAuditBusy(false);
     }
   };
 
@@ -2618,29 +2775,91 @@ export default function App() {
                   )}
                   <div className="audit-history">
                     <h3>最近审计</h3>
+                    <div className="audit-batch-row">
+                      <button
+                        className="text-button"
+                        disabled={selectedAuditIds.length === 0 || batchAuditBusy}
+                        onClick={() => void batchMemoryAudits("approve")}
+                        type="button"
+                      >
+                        <ShieldCheck size={13} />
+                        <span>批量批准</span>
+                      </button>
+                      <button
+                        className="text-button danger"
+                        disabled={selectedAuditIds.length === 0 || batchAuditBusy}
+                        onClick={() => void batchMemoryAudits("reject")}
+                        type="button"
+                      >
+                        <Trash2 size={13} />
+                        <span>批量拒绝</span>
+                      </button>
+                    </div>
                     {memoryAudits.length === 0 ? (
                       <p className="empty">暂无审计记录</p>
                     ) : (
-                      memoryAudits.map((audit) => (
-                        <article className="audit-item" key={audit.id}>
-                          <span className={audit.accepted ? "accepted" : "rejected"}>
-                            {audit.accepted ? "accepted" : "pending"}
-                          </span>
-                          <strong>{audit.candidate?.kind ?? audit.method}</strong>
-                          <p>{audit.candidate?.content ?? audit.reason}</p>
-                          <small>{audit.reason}</small>
-                          {!audit.accepted && audit.candidate ? (
-                            <button
-                              className="text-button"
-                              disabled={approvingAuditId === audit.id}
-                              onClick={() => void approveMemoryAudit(audit)}
-                              type="button"
-                            >
-                              {approvingAuditId === audit.id ? "批准中" : "批准写入"}
-                            </button>
-                          ) : null}
-                        </article>
-                      ))
+                      memoryAudits.map((audit) => {
+                        const pending = !audit.accepted && !audit.memory_id && Boolean(audit.candidate);
+                        return (
+                          <article className="audit-item" key={audit.id}>
+                            <span className={audit.accepted ? "accepted" : pending ? "pending" : "rejected"}>
+                              {audit.accepted ? "accepted" : pending ? "pending" : "rejected"}
+                            </span>
+                            <strong>{audit.candidate?.kind ?? audit.method}</strong>
+                            {pending ? (
+                              <label className="audit-select">
+                                <input
+                                  checked={selectedAuditIds.includes(audit.id)}
+                                  onChange={(event) =>
+                                    toggleAuditSelection(audit.id, event.target.checked)
+                                  }
+                                  type="checkbox"
+                                />
+                                <em>选择</em>
+                              </label>
+                            ) : null}
+                            {pending && audit.candidate ? (
+                              <textarea
+                                className="audit-edit"
+                                onChange={(event) => updateAuditDraft(audit.id, event.target.value)}
+                                rows={3}
+                                value={auditDrafts[audit.id] ?? audit.candidate.content}
+                              />
+                            ) : (
+                              <p>{audit.candidate?.content ?? audit.reason}</p>
+                            )}
+                            <small>{audit.reason}</small>
+                            {pending ? (
+                              <div className="audit-actions">
+                                <button
+                                  className="text-button"
+                                  disabled={
+                                    approvingAuditId === audit.id ||
+                                    rejectingAuditId === audit.id ||
+                                    batchAuditBusy
+                                  }
+                                  onClick={() => void approveMemoryAudit(audit)}
+                                  type="button"
+                                >
+                                  {approvingAuditId === audit.id ? "批准中" : "批准写入"}
+                                </button>
+                                <button
+                                  className="text-button danger"
+                                  disabled={
+                                    approvingAuditId === audit.id ||
+                                    rejectingAuditId === audit.id ||
+                                    batchAuditBusy
+                                  }
+                                  onClick={() => void rejectMemoryAudit(audit)}
+                                  type="button"
+                                >
+                                  {rejectingAuditId === audit.id ? "拒绝中" : "拒绝"}
+                                </button>
+                              </div>
+                            ) : null}
+                          </article>
+                        );
+                      })
                     )}
                     <p className="evaluation-status">{memoryAuditStatus}</p>
                   </div>

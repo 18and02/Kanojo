@@ -40,6 +40,13 @@ type PeerScanResult = {
   error: string | null;
 };
 
+type MemoryAuditCandidatePatch = {
+  kind: string;
+  content: string;
+  importance: number;
+  confidence: number;
+};
+
 contextBridge.exposeInMainWorld("kanojoApi", {
   chat: async (text: string) => {
     const response = await fetch(`${backendBaseUrl}/chat`, {
@@ -157,12 +164,40 @@ contextBridge.exposeInMainWorld("kanojoApi", {
     }
     return response.json();
   },
-  approveMemoryAudit: async (auditId: number) => {
+  approveMemoryAudit: async (auditId: number, candidate?: MemoryAuditCandidatePatch) => {
     const response = await fetch(`${backendBaseUrl}/memory-audits/${auditId}/approve`, {
-      method: "POST"
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(candidate ? { candidate } : {})
     });
     if (!response.ok) {
       throw new Error(`Memory audit approval failed: ${response.status}`);
+    }
+    return response.json();
+  },
+  rejectMemoryAudit: async (auditId: number, reason = "rejected manually") => {
+    const response = await fetch(`${backendBaseUrl}/memory-audits/${auditId}/reject`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason })
+    });
+    if (!response.ok) {
+      throw new Error(`Memory audit rejection failed: ${response.status}`);
+    }
+    return response.json();
+  },
+  batchMemoryAudits: async (
+    auditIds: number[],
+    action: "approve" | "reject",
+    reason?: string
+  ) => {
+    const response = await fetch(`${backendBaseUrl}/memory-audits/batch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ audit_ids: auditIds, action, reason })
+    });
+    if (!response.ok) {
+      throw new Error(`Memory audit batch request failed: ${response.status}`);
     }
     return response.json();
   },

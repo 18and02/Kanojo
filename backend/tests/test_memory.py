@@ -909,6 +909,135 @@ def test_approve_memory_audit_writes_candidate(tmp_path, monkeypatch) -> None:
     assert audit["memory_id"] == memory_id
 
 
+def test_approve_memory_audit_accepts_candidate_override(tmp_path, monkeypatch) -> None:
+    from kanojo_agent import main
+
+    store = MemoryStore(tmp_path / "approve-audit-override.db")
+    message_id = store.add_message("default", "user", "我喜欢柔和女声")
+    audit_id = store.add_memory_audit(
+        source_message_id=message_id,
+        method="manual_test",
+        raw_text="我喜欢柔和女声",
+        candidate={
+            "kind": "preference",
+            "content": "用户喜欢柔和女声",
+            "importance": 0.7,
+            "confidence": 0.8,
+        },
+        accepted=False,
+        reason="pending manual review",
+        memory_id=None,
+    )
+    monkeypatch.setattr(main, "store", store)
+    client = TestClient(main.app)
+
+    response = client.post(
+        f"/memory-audits/{audit_id}/approve",
+        json={
+            "candidate": {
+                "kind": "preference",
+                "content": "用户喜欢柔和普通话女声",
+                "importance": 0.6,
+                "confidence": 0.75,
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    memory = store.memory_by_id(payload["memory_id"])
+    assert memory["content"] == "用户喜欢柔和普通话女声"
+    assert memory["importance"] == 0.6
+    audit = store.memory_audit_by_id(audit_id)
+    assert audit["candidate"]["content"] == "用户喜欢柔和普通话女声"
+
+
+def test_reject_memory_audit_marks_candidate_rejected(tmp_path, monkeypatch) -> None:
+    from kanojo_agent import main
+
+    store = MemoryStore(tmp_path / "reject-audit.db")
+    message_id = store.add_message("default", "user", "今天只是测试")
+    audit_id = store.add_memory_audit(
+        source_message_id=message_id,
+        method="manual_test",
+        raw_text="今天只是测试",
+        candidate={
+            "kind": "event",
+            "content": "用户今天只是测试",
+            "importance": 0.3,
+            "confidence": 0.7,
+        },
+        accepted=False,
+        reason="pending manual review",
+        memory_id=None,
+    )
+    monkeypatch.setattr(main, "store", store)
+    client = TestClient(main.app)
+
+    response = client.post(f"/memory-audits/{audit_id}/reject", json={"reason": "manual noise"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["rejected"] is True
+    audit = store.memory_audit_by_id(audit_id)
+    assert audit["accepted"] is False
+    assert audit["memory_id"] is None
+    assert audit["reason"] == "manual noise"
+
+
+def test_batch_memory_audits_rejects_multiple_candidates(tmp_path, monkeypatch) -> None:
+    from kanojo_agent import main
+
+    store = MemoryStore(tmp_path / "batch-audits.db")
+    first_message_id = store.add_message("default", "user", "测试一")
+    second_message_id = store.add_message("default", "user", "测试二")
+    first_audit_id = store.add_memory_audit(
+        source_message_id=first_message_id,
+        method="manual_test",
+        raw_text="测试一",
+        candidate={
+            "kind": "event",
+            "content": "用户测试一",
+            "importance": 0.3,
+            "confidence": 0.7,
+        },
+        accepted=False,
+        reason="pending manual review",
+        memory_id=None,
+    )
+    second_audit_id = store.add_memory_audit(
+        source_message_id=second_message_id,
+        method="manual_test",
+        raw_text="测试二",
+        candidate={
+            "kind": "event",
+            "content": "用户测试二",
+            "importance": 0.3,
+            "confidence": 0.7,
+        },
+        accepted=False,
+        reason="pending manual review",
+        memory_id=None,
+    )
+    monkeypatch.setattr(main, "store", store)
+    client = TestClient(main.app)
+
+    response = client.post(
+        "/memory-audits/batch",
+        json={
+            "audit_ids": [first_audit_id, second_audit_id],
+            "action": "reject",
+            "reason": "batch rejected",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok_count"] == 2
+    assert store.memory_audit_by_id(first_audit_id)["reason"] == "batch rejected"
+    assert store.memory_audit_by_id(second_audit_id)["reason"] == "batch rejected"
+
+
 def test_cleanup_test_memories_dry_run_and_apply(tmp_path, monkeypatch) -> None:
     from kanojo_agent import main
 

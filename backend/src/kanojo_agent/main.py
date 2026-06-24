@@ -101,6 +101,20 @@ class MemoryCardSnapshotRequest(BaseModel):
     label: str | None = Field(default=None, max_length=80)
 
 
+class MemoryAuditApproveRequest(BaseModel):
+    candidate: MemoryCreateRequest | None = None
+
+
+class MemoryAuditRejectRequest(BaseModel):
+    reason: str = Field(default="rejected manually", min_length=1, max_length=200)
+
+
+class MemoryAuditBatchRequest(BaseModel):
+    audit_ids: list[int] = Field(min_length=1, max_length=50)
+    action: str = Field(pattern="^(approve|reject)$")
+    reason: str | None = Field(default=None, max_length=200)
+
+
 class HeartbeatRequest(BaseModel):
     enabled: bool = True
     force: bool = False
@@ -627,8 +641,38 @@ def recent_memory_audits(limit: int = 20) -> dict[str, Any]:
     return {"items": store.recent_memory_audits(limit=limit)}
 
 
-@app.post("/memory-audits/{audit_id}/approve")
-async def approve_memory_audit(audit_id: int) -> dict[str, Any]:
+def memory_audit_candidate_payload(
+    audit: dict[str, Any],
+    override: MemoryCreateRequest | None = None,
+) -> dict[str, Any]:
+    if override is None:
+        candidate = audit.get("candidate")
+        if not isinstance(candidate, dict):
+            raise HTTPException(status_code=400, detail="audit has no memory candidate")
+        try:
+            normalized = MemoryCreateRequest(
+                kind=str(candidate["kind"]),
+                content=str(candidate["content"]),
+                importance=float(candidate.get("importance", 0.5)),
+                confidence=float(candidate.get("confidence", 0.7)),
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=f"invalid memory candidate: {exc}") from exc
+        payload = normalized.model_dump()
+        payload["method"] = str(candidate.get("method") or audit.get("method") or "manual_review")
+        payload["reason"] = str(candidate.get("reason") or "approved manually")
+        return payload
+
+    payload = override.model_dump()
+    payload["method"] = str(audit.get("method") or "manual_review")
+    payload["reason"] = "edited manually before approval"
+    return payload
+
+
+async def approve_memory_audit_candidate(
+    audit_id: int,
+    override: MemoryCreateRequest | None = None,
+) -> dict[str, Any]:
     audit = store.memory_audit_by_id(audit_id)
     if audit is None:
         raise HTTPException(status_code=404, detail="memory audit not found")
@@ -638,9 +682,7 @@ async def approve_memory_audit(audit_id: int) -> dict[str, Any]:
             "reason": "audit already has memory_id",
             "audit": audit,
         }
-    candidate = audit.get("candidate")
-    if not isinstance(candidate, dict):
-        raise HTTPException(status_code=400, detail="audit has no memory candidate")
+    candidate = memory_audit_candidate_payload(audit, override)
     write_result = await write_memory_by_policy(
         kind=str(candidate["kind"]),
         content=str(candidate["content"]),
@@ -655,6 +697,7 @@ async def approve_memory_audit(audit_id: int) -> dict[str, Any]:
             accepted=False,
             reason=str(write_result.get("reason") or "manual approval write failed"),
             memory_id=None,
+            candidate=candidate,
         )
         raise HTTPException(status_code=503, detail={"write": write_result, "audit": updated})
     memory_id = int(write_result["id"]) if write_result.get("id") is not None else None
@@ -663,6 +706,7 @@ async def approve_memory_audit(audit_id: int) -> dict[str, Any]:
         accepted=True,
         reason="approved manually",
         memory_id=memory_id,
+        candidate=candidate,
     )
     return {
         "approved": True,
@@ -670,6 +714,76 @@ async def approve_memory_audit(audit_id: int) -> dict[str, Any]:
         "write": write_result,
         "audit": updated,
     }
+
+
+def reject_memory_audit_candidate(audit_id: int, reason: str) -> dict[str, Any]:
+    audit = store.memory_audit_by_id(audit_id)
+    if audit is None:
+        raise HTTPException(status_code=404, detail="memory audit not found")
+    if audit.get("memory_id"):
+        return {
+            "rejected": False,
+            "reason": "audit already has memory_id",
+            "audit": audit,
+        }
+    updated = store.update_memory_audit_decision(
+        audit_id,
+        accepted=False,
+        reason=reason,
+        memory_id=None,
+    )
+    return {
+        "rejected": True,
+        "audit": updated,
+    }
+
+
+@app.post("/memory-audits/batch")
+async def batch_memory_audits(request: MemoryAuditBatchRequest) -> dict[str, Any]:
+    items = []
+    for audit_id in request.audit_ids:
+        try:
+            if request.action == "approve":
+                result = await approve_memory_audit_candidate(audit_id)
+                ok = bool(result.get("approved"))
+            else:
+                result = reject_memory_audit_candidate(
+                    audit_id,
+                    request.reason or "rejected manually",
+                )
+                ok = bool(result.get("rejected"))
+            items.append({"audit_id": audit_id, "ok": ok, "result": result})
+        except HTTPException as exc:
+            items.append(
+                {
+                    "audit_id": audit_id,
+                    "ok": False,
+                    "status_code": exc.status_code,
+                    "detail": exc.detail,
+                }
+            )
+    return {
+        "action": request.action,
+        "requested_count": len(request.audit_ids),
+        "ok_count": sum(1 for item in items if item["ok"]),
+        "items": items,
+    }
+
+
+@app.post("/memory-audits/{audit_id}/approve")
+async def approve_memory_audit(
+    audit_id: int,
+    request: MemoryAuditApproveRequest | None = None,
+) -> dict[str, Any]:
+    return await approve_memory_audit_candidate(audit_id, request.candidate if request else None)
+
+
+@app.post("/memory-audits/{audit_id}/reject")
+def reject_memory_audit(
+    audit_id: int,
+    request: MemoryAuditRejectRequest | None = None,
+) -> dict[str, Any]:
+    return reject_memory_audit_candidate(audit_id, request.reason if request else "rejected manually")
 
 
 @app.get("/evaluation/summary")

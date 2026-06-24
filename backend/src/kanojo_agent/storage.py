@@ -317,16 +317,33 @@ class MemoryStore:
         accepted: bool,
         reason: str,
         memory_id: int | None,
+        candidate: dict[str, Any] | None = None,
     ) -> dict[str, Any] | None:
         with self.connect() as conn:
-            conn.execute(
-                """
-                UPDATE memory_audits
-                SET accepted = ?, reason = ?, memory_id = ?
-                WHERE id = ?
-                """,
-                (1 if accepted else 0, reason, memory_id, audit_id),
-            )
+            if candidate is None:
+                conn.execute(
+                    """
+                    UPDATE memory_audits
+                    SET accepted = ?, reason = ?, memory_id = ?
+                    WHERE id = ?
+                    """,
+                    (1 if accepted else 0, reason, memory_id, audit_id),
+                )
+            else:
+                conn.execute(
+                    """
+                    UPDATE memory_audits
+                    SET accepted = ?, reason = ?, memory_id = ?, candidate_json = ?
+                    WHERE id = ?
+                    """,
+                    (
+                        1 if accepted else 0,
+                        reason,
+                        memory_id,
+                        json.dumps(candidate, ensure_ascii=False),
+                        audit_id,
+                    ),
+                )
         return self.memory_audit_by_id(audit_id)
 
     def search_memories(self, query: str, limit: int = 5) -> list[dict[str, Any]]:

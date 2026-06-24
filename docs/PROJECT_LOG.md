@@ -361,3 +361,15 @@
 - preload 与 browser fallback API 均接入 `peerScan`,确保 Electron 与浏览器预览行为一致。
 - 自检:
   - bundled `pnpm build`: passed
+
+### Goal 继续优化循环: 记忆审计批量治理
+
+- 后端新增 `POST /memory-audits/{audit_id}/reject`,支持人工拒绝待确认候选记忆。
+- `POST /memory-audits/{audit_id}/approve` 支持传入编辑后的 `candidate`,批准前可修正内容、重要性和置信度。
+- 新增 `POST /memory-audits/batch`,支持批量批准或批量拒绝。
+- 桌面端记忆审计页新增候选内容编辑框、单条拒绝、勾选、多选批量批准和批量拒绝;批量批准会逐条保留已编辑内容。
+- `docs/API_CONTRACT.md` 增加记忆审计人工治理接口说明。
+- 自检:
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 47 passed
+  - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed
+  - bundled `pnpm build`: passed
