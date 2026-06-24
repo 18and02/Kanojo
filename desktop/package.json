@@ -1,0 +1,36 @@
+{
+  "name": "kanojo-agent-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "tsc --noEmit && electron-vite build",
+    "preview": "electron-vite preview"
+  },
+  "main": "out/main/main.js",
+  "dependencies": {
+    "@pixi/core": "6.4.2",
+    "@pixi/display": "6.4.2",
+    "@pixi/loaders": "6.4.2",
+    "@pixi/math": "6.4.2",
+    "@pixi/sprite": "6.4.2",
+    "@pixi/utils": "6.4.2",
+    "@vitejs/plugin-react": "^5.0.0",
+    "electron": "^33.0.0",
+    "electron-vite": "^2.3.0",
+    "live2dcubismcore": "1.0.2",
+    "lucide-react": "^0.468.0",
+    "pixi-live2d-display": "0.4.0",
+    "pixi.js": "6.4.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "vite": "^5.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.6.0"
+  }
+}
