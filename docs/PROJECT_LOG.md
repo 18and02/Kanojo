@@ -106,3 +106,4 @@
 - 新增 `docs/MAC_MINI_CODEX_SETUP.md`,给 Mac mini 侧 Codex 使用,覆盖常驻记忆源节点的依赖、`.env`、启动命令和双机联调检查。
 - 本地初始化 git 仓库并创建初始提交,用于后续推送到 GitHub 后让 Mac mini 直接 `git clone`。
 - 仓库忽略规则确认不会提交 `backend/.env`、SQLite 数据库、虚拟环境、前端依赖和构建产物。
+- GitHub 私有仓库已创建为 `https://github.com/18and02/Kanojo`,并把 Mac mini 指导文档更新为含实际仓库地址、Mac IP、主机名和 PC 验证 URL 的最新版。
