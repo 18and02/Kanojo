@@ -47,6 +47,13 @@ KANOJO_PEER_BASE_URL=http://kanojo-pc.local:8787
 KANOJO_MEMORY_PRIMARY=local
 ```
 
+Mac 也可以直接从仓库脚本预热 PC peer,用于消除演示前的模型冷启动:
+
+```bash
+cd ~/Projects/Kanojo
+bash scripts/prewarm_peer_inference.sh http://kanojo-pc.local:8787
+```
+
 PC `.env` 关键项:
 
 ```env
@@ -160,9 +167,8 @@ curl http://127.0.0.1:8787/node/status
 通常是 PC 本地模型冷启动。先预热:
 
 ```bash
-curl -X POST http://kanojo-pc.local:8787/node/inference/prewarm \
-  -H "Content-Type: application/json" \
-  -d '{"text":"预热 PC 推理节点"}'
+cd ~/Projects/Kanojo
+bash scripts/prewarm_peer_inference.sh http://kanojo-pc.local:8787
 ```
 
 然后重新调用 Mac `/chat`。

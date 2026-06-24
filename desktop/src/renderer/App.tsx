@@ -286,6 +286,12 @@ type NodeStatus = {
   };
 };
 
+type NodeAlert = {
+  level: "ok" | "warning" | "muted";
+  title: string;
+  detail: string;
+};
+
 type STTResult = {
   configured: boolean;
   text: string;
@@ -688,6 +694,7 @@ export default function App() {
           ? "interrupted"
           : "idle";
   const lipSyncLive2DValue = avatarMouthLevel / 3;
+  const nodeAlert = summarizeNodeAlert(nodeStatus);
 
   const refreshSttStatus = async (fallbackConfigured = config?.stt.configured ?? false) => {
     try {
@@ -910,6 +917,13 @@ export default function App() {
       void refreshNodeStatus();
     }
   }, [activePanel]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      void refreshNodeStatus();
+    }, 30_000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     if (!("speechSynthesis" in window)) {
@@ -1912,6 +1926,10 @@ export default function App() {
               写入 {nodeStatus?.memory_write_policy.primary ?? "unknown"}
             </span>
           </div>
+          <div className={`node-alert ${nodeAlert.level}`} title={nodeAlert.detail}>
+            <span>{nodeAlert.title}</span>
+            <strong>{nodeAlert.detail}</strong>
+          </div>
         </section>
 
         <nav className="panel-tabs" aria-label="侧栏面板">
@@ -2830,6 +2848,54 @@ function readNotificationState() {
 
 function formatMs(value: number | null | undefined) {
   return value === null || value === undefined ? "无" : `${value} ms`;
+}
+
+function summarizeNodeAlert(status: NodeStatus | null): NodeAlert {
+  if (!status) {
+    return {
+      level: "muted",
+      title: "节点未刷新",
+      detail: "等待拓扑状态"
+    };
+  }
+  if (status.peer.configured && !status.peer.available) {
+    return {
+      level: "warning",
+      title: "Peer 不可用",
+      detail: status.peer.error ?? status.peer.base_url ?? "检查对端后端"
+    };
+  }
+  if (status.memory_write_policy.primary === "peer" && !status.memory_write_policy.migration_ready) {
+    return {
+      level: "warning",
+      title: "写回未就绪",
+      detail: status.memory_write_policy.note
+    };
+  }
+  if (
+    status.node.role === "mac_home" &&
+    status.inference_route_policy.primary === "auto" &&
+    status.inference_route_policy.peer_inference_configured &&
+    status.peer.available
+  ) {
+    return {
+      level: "ok",
+      title: "Mac 委托 PC",
+      detail: "peer 推理可用"
+    };
+  }
+  if (status.node.role === "pc_inference" && status.node.llm_configured) {
+    return {
+      level: status.peer.available ? "ok" : "muted",
+      title: "PC 推理节点",
+      detail: status.peer.available ? "记忆写回可用" : "本地推理可用"
+    };
+  }
+  return {
+    level: "muted",
+    title: status.node.role,
+    detail: status.inference_route_policy.note
+  };
 }
 
 function formatRate(value: number | null | undefined) {

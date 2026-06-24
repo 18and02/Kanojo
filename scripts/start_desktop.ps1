@@ -1,4 +1,7 @@
 param(
+    [switch]$EnsureBackend,
+    [string]$BackendBindAddress = "0.0.0.0",
+    [int]$BackendPort = 8787,
     [switch]$Restart
 )
 
@@ -24,6 +27,17 @@ if ($Restart) {
     } | ForEach-Object {
         Stop-Process -Id $_.ProcessId -Force
     }
+}
+
+if ($EnsureBackend) {
+    $BackendArgs = @{
+        BindAddress = $BackendBindAddress
+        Port = $BackendPort
+    }
+    if ($Restart) {
+        $BackendArgs.Restart = $true
+    }
+    & (Join-Path $Root "scripts\start_backend.ps1") @BackendArgs
 }
 
 Push-Location $Desktop

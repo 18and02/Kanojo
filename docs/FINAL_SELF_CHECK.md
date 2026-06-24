@@ -84,11 +84,18 @@ release 打包:
 
 ## 后续优化优先级
 
-1. 给 Mac mini 配置 launchd 常驻服务的完整安装/卸载脚本,避免手动维护。
-2. 给 PC 后端配置开机启动或桌面端启动前自动拉起。
-3. 引入 installer 打包器。
-4. 替换最终 Live2D / 视觉资产。
-5. 增加更严格的记忆编辑 UI,支持人工确认、删除和降权。
-6. 增加评测报告自动生成 Markdown。
-7. 增加 peer 断线告警和桌面端提示。
-8. 适当增大 Mac `KANOJO_PEER_TIMEOUT` 或保证 PC 开机后预热,进一步降低冷启动回退概率。
+1. 引入 installer 打包器。
+2. 替换最终 Live2D / 视觉资产。
+3. 增加更严格的记忆编辑 UI,支持人工确认、删除和降权。
+4. 增强 peer 断线后的桌面端操作建议和一键诊断。
+5. 增加评测报告批量对比,支持多次导出之间的指标变化。
+6. 适当增大 Mac `KANOJO_PEER_TIMEOUT` 或保证 PC 开机后预热,进一步降低冷启动回退概率。
+
+## 2026-06-24 继续优化循环
+
+- Mac mini 常驻:新增 `scripts/install_macos_launchd.sh` 与 `scripts/uninstall_macos_launchd.sh`,把 `com.kanojo.backend` 的安装、重启、日志和卸载流程固化。
+- PC 自启:新增 `scripts/install_windows_backend_startup.ps1` 与 `scripts/uninstall_windows_backend_startup.ps1`,使用当前用户 Startup 文件夹,不依赖管理员权限。
+- 桌面启动: `scripts/start_desktop.ps1` 新增 `-EnsureBackend`,启动桌面前可自动拉起 PC 后端。
+- 评测报告: `scripts/export_evaluation_snapshot.ps1` 默认生成 `evaluation-report.md`,也可单独运行 `scripts/write_evaluation_report.ps1`。
+- 桌面体验:侧栏增加节点告警条,自动刷新拓扑状态,直接显示 peer 不可用、写回未就绪、PC 推理节点和 Mac 委托 PC 等状态。
+- 冷启动处理:新增 `scripts/prewarm_peer_inference.sh`,Mac 侧可一条命令预热 PC peer。

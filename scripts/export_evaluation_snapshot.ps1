@@ -1,6 +1,7 @@
 param(
     [string]$BaseUrl = "http://127.0.0.1:8787",
-    [string]$OutDir = "exports"
+    [string]$OutDir = "exports",
+    [switch]$SkipReport
 )
 
 $ErrorActionPreference = "Stop"
@@ -35,5 +36,9 @@ Save-JsonEndpoint -Path "/evaluation/export?format=json" -FileName "evaluation-e
 Save-TextEndpoint -Path "/evaluation/export?format=csv" -FileName "evaluation-events.csv"
 Save-JsonEndpoint -Path "/memory-card?session_id=default" -FileName "memory-card.json"
 Save-TextEndpoint -Path "/memory-card/export?session_id=default&format=markdown" -FileName "memory-card.md"
+
+if (-not $SkipReport) {
+    & (Join-Path $PSScriptRoot "write_evaluation_report.ps1") -OutDir $Target
+}
 
 Get-ChildItem -LiteralPath $Target | Select-Object Name,Length,LastWriteTime | Format-Table -AutoSize

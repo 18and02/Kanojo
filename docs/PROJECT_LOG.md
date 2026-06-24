@@ -246,3 +246,25 @@
   - `.\scripts\cleanup_test_memories.ps1 -Apply`: `deactivated_count=0`
   - `.\scripts\dual_node_demo.ps1`: passed=`true`,PC peer memory_count=`0`,Mac `/chat` 继续委托 PC peer 推理,client_elapsed_ms 约 974ms
 - 当前五轮 goal 的阻塞点已解除。
+
+### Goal 继续优化循环: 常驻、自启、评测报告和桌面拓扑提示
+
+- 新增 Mac 常驻服务脚本:
+  - `scripts/install_macos_launchd.sh`
+  - `scripts/uninstall_macos_launchd.sh`
+  - `docs/MAC_MINI_CODEX_SETUP.md` 增补 launchd 安装、状态查看、日志和卸载说明
+- 新增 PC 登录自启脚本:
+  - `scripts/install_windows_backend_startup.ps1`
+  - `scripts/uninstall_windows_backend_startup.ps1`
+  - 使用当前用户 Startup 文件夹,避免 Scheduled Task 在受限用户环境下被拒绝
+- `scripts/start_desktop.ps1` 新增 `-EnsureBackend`,只启动桌面端时也可先确认后端已拉起。
+- 新增 `scripts/write_evaluation_report.ps1`,并让 `scripts/export_evaluation_snapshot.ps1` 默认生成 `evaluation-report.md`。
+- 桌面侧栏新增节点告警条,并每 30 秒刷新节点拓扑状态,便于演示时直接看出 peer 不可用、写回未就绪或 Mac 委托 PC 状态。
+- 新增 `scripts/prewarm_peer_inference.sh`,Mac 侧可直接预热 PC peer,降低首次聊天因模型冷启动回退的概率。
+- 自检:
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 42 passed
+  - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed
+  - bundled `pnpm build`: passed
+  - PowerShell / shell 脚本语法检查: passed
+  - `.\scripts\export_evaluation_snapshot.ps1 -OutDir exports-loop2`: passed,生成 `evaluation-report.md`
+  - `.\scripts\dual_node_demo.ps1`: passed=`true`,Mac `/chat` 委托 PC peer 推理,client_elapsed_ms 约 1124ms

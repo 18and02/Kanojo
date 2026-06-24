@@ -94,6 +94,18 @@ cd "G:\Codex env\Kanojo"
 .\scripts\start_desktop.ps1 -Restart
 ```
 
+只启动桌面端但先确保后端已运行:
+
+```powershell
+.\scripts\start_desktop.ps1 -EnsureBackend -Restart
+```
+
+把 PC 后端注册为当前用户登录自启:
+
+```powershell
+.\scripts\install_windows_backend_startup.ps1 -RunNow
+```
+
 ## P1 收口与演示
 
 P1 验收、演示脚本和评测导出见 `docs\P1_CLOSEOUT.md`。

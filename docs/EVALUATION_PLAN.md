@@ -30,6 +30,15 @@ cd "G:\Codex env\Kanojo"
 - `evaluation-events.csv`
 - `memory-card.json`
 - `memory-card.md`
+- `evaluation-report.md`
+
+`evaluation-report.md` 是自动生成的 Markdown 摘要,可直接作为论文/答辩取数材料的索引页。
+
+如果只需要原始 JSON / CSV,可以跳过报告:
+
+```powershell
+.\scripts\export_evaluation_snapshot.ps1 -SkipReport
+```
 
 如果要导出 Mac mini 的记忆源:
 

@@ -62,6 +62,32 @@ cd "G:\Codex env\Kanojo"
 .\scripts\start_demo_stack.ps1 -Restart -SkipDesktop
 ```
 
+如果只启动桌面端,但希望桌面端启动前自动确认 PC 后端已拉起:
+
+```powershell
+.\scripts\start_desktop.ps1 -EnsureBackend -Restart
+```
+
+## PC 后端登录自启
+
+PC 可以把后端注册到当前用户的 Startup 文件夹。该方式不需要管理员权限,登录后会启动 `start_backend.ps1`,默认监听 `0.0.0.0:8787`,并沿用启动预热逻辑:
+
+```powershell
+.\scripts\install_windows_backend_startup.ps1 -RunNow
+```
+
+查看启动项:
+
+```powershell
+Get-ChildItem ([Environment]::GetFolderPath("Startup")) -Filter "Kanojo Backend.cmd"
+```
+
+卸载:
+
+```powershell
+.\scripts\uninstall_windows_backend_startup.ps1
+```
+
 ## 打包
 
 生成源码包和桌面构建产物:
@@ -78,3 +104,19 @@ desktop/out/
 ```
 
 当前仓库没有引入 installer 打包器,因此 `desktop/out/` 是 Electron/Vite 构建产物,`release/*.zip` 是可交付源码包。答辩演示以本地启动脚本为准。
+
+## 评测报告
+
+导出评测数据时会同步生成 Markdown 摘要:
+
+```powershell
+.\scripts\export_evaluation_snapshot.ps1 -OutDir exports-demo
+```
+
+核心文件:
+
+```text
+exports-demo/evaluation-report.md
+```
+
+报告包含节点基线、聊天/心跳/形象指标、推理路由统计、记忆名片摘要和最近事件,可直接作为论文/答辩材料索引。

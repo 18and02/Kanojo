@@ -207,6 +207,59 @@ uvicorn kanojo_agent.main:app --host 0.0.0.0 --port 8787
 
 不要只监听 `127.0.0.1`,否则 PC 访问不到 Mac。
 
+### 5.1 安装为 launchd 常驻服务
+
+仓库提供了 launchd 安装脚本,用于把 Mac 后端注册为当前用户的 LaunchAgent。脚本会生成:
+
+- `~/Library/LaunchAgents/com.kanojo.backend.plist`
+- `~/Projects/Kanojo/backend/.launchd/run_backend.sh`
+- `~/Projects/Kanojo/backend/logs/launchd.out.log`
+- `~/Projects/Kanojo/backend/logs/launchd.err.log`
+
+安装:
+
+```bash
+cd ~/Projects/Kanojo
+bash scripts/install_macos_launchd.sh
+```
+
+安装脚本默认参数:
+
+```bash
+LABEL=com.kanojo.backend
+PROJECT_ROOT=~/Projects/Kanojo
+BIND_ADDRESS=0.0.0.0
+PORT=8787
+PYTHON_BIN=~/Projects/Kanojo/backend/.venv/bin/python
+```
+
+如需覆盖参数:
+
+```bash
+PROJECT_ROOT="$HOME/Projects/Kanojo" PORT=8787 bash scripts/install_macos_launchd.sh
+```
+
+查看状态:
+
+```bash
+launchctl print gui/$UID/com.kanojo.backend
+curl http://127.0.0.1:8787/health
+tail -n 80 ~/Projects/Kanojo/backend/logs/launchd.err.log
+```
+
+卸载:
+
+```bash
+cd ~/Projects/Kanojo
+bash scripts/uninstall_macos_launchd.sh
+```
+
+更新代码或 `.env` 后重启服务:
+
+```bash
+launchctl kickstart -k gui/$UID/com.kanojo.backend
+```
+
 ## 6. Mac 本机验证
 
 另开一个终端:
@@ -359,6 +412,13 @@ curl -X POST http://kanojo-pc.local:8787/node/inference/chat \
 curl -X POST http://kanojo-pc.local:8787/node/inference/prewarm \
   -H "Content-Type: application/json" \
   -d '{"text":"预热 PC 推理节点"}'
+```
+
+也可以用仓库脚本:
+
+```bash
+cd ~/Projects/Kanojo
+bash scripts/prewarm_peer_inference.sh http://kanojo-pc.local:8787
 ```
 
 PC 侧 `scripts/start_backend.ps1` 在 `KANOJO_NODE_ROLE=pc_inference` 时会自动调用该预热接口。也可以手动执行:
