@@ -64,10 +64,22 @@ cd "G:\Codex env\Kanojo"
 .\scripts\dual_node_demo.ps1
 ```
 
+答辩演示启动:
+
+```powershell
+.\scripts\start_demo_stack.ps1 -Restart
+```
+
 导出评测数据和记忆名片:
 
 ```powershell
 .\scripts\export_evaluation_snapshot.ps1
+```
+
+生成源码交付包和桌面构建产物:
+
+```powershell
+.\scripts\build_release.ps1
 ```
 
 如果桌面端还显示旧状态,清理旧 Electron / Vite 进程后重启:

@@ -207,3 +207,19 @@
   - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed
   - bundled `pnpm build`: passed
   - `.\scripts\export_evaluation_snapshot.ps1 -OutDir exports-cycle3`: passed
+
+### Goal 循环 4/5: 展示包装与打包启动
+
+- 新增 `scripts/start_demo_stack.ps1`,面向答辩演示启动:
+  - 可选启动 STT / TTS
+  - PC 后端监听 `0.0.0.0:8787`
+  - 自动预热 PC 推理
+  - 检查防火墙规则
+  - 执行双机冒烟
+  - 启动桌面端
+- 新增 `scripts/build_release.ps1`,执行后端测试、ruff、桌面构建,并通过 `git archive` 生成源码交付包。
+- 新增 `docs/SHOWCASE_PACKAGE.md`,说明展示定位、Live2D 当前形象资产、演示顺序、启动命令和打包方式。
+- README 增加演示启动和 release 打包入口。
+- 自检:
+  - `.\scripts\start_demo_stack.ps1 -Restart -SkipDesktop`: passed,双机冒烟 passed=`true`
+  - `.\scripts\build_release.ps1`: passed,生成 `release/kanojo-source-<commit>.zip` 与 `desktop/out/`

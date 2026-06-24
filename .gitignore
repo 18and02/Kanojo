@@ -15,5 +15,6 @@ out/
 data/
 logs/
 exports*/
+release/
 recordings/
 models/
