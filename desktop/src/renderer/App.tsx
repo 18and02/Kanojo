@@ -11,12 +11,14 @@ import {
   Mic,
   MicOff,
   Play,
+  Pencil,
   RefreshCw,
   SearchCheck,
   Save,
   Send,
   Settings,
   ShieldCheck,
+  SlidersHorizontal,
   Square,
   Trash2,
   Volume2,
@@ -81,6 +83,13 @@ type MemoryCardExport = {
 type MemoryDeactivationResult = {
   id: number;
   deactivated: boolean;
+  reason: string;
+  memory?: MemoryCardItem | null;
+};
+
+type MemoryUpdateResult = {
+  id: number;
+  updated: boolean;
   reason: string;
   memory?: MemoryCardItem | null;
 };
@@ -438,6 +447,10 @@ type KanojoApi = {
   memoryCard: () => Promise<MemoryCard>;
   memoryCardReflection: () => Promise<MemoryReflectionSummary>;
   memoryCardExport: (format: MemoryCardExportFormat) => Promise<MemoryCardExport>;
+  updateMemory: (
+    memoryId: number,
+    patch: Partial<Pick<MemoryCardItem, "content" | "importance" | "confidence">>
+  ) => Promise<MemoryUpdateResult>;
   deactivateMemory: (memoryId: number) => Promise<MemoryDeactivationResult>;
   memoryCardSnapshots: () => Promise<{ items: MemoryCardSnapshotSummary[] }>;
   createMemoryCardSnapshot: (label?: string) => Promise<MemoryCardSnapshot>;
@@ -545,6 +558,17 @@ const browserBackendApi: KanojoApi = {
     return response.json();
   },
   memoryCardExport: async (format: MemoryCardExportFormat) => fetchMemoryCardExport(format),
+  updateMemory: async (memoryId, patch) => {
+    const response = await fetch(`${backendBaseUrl}/memories/${memoryId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch)
+    });
+    if (!response.ok) {
+      throw new Error(`Memory update request failed: ${response.status}`);
+    }
+    return response.json();
+  },
   deactivateMemory: async (memoryId: number) => {
     const response = await fetch(`${backendBaseUrl}/memories/${memoryId}`, {
       method: "DELETE"
@@ -822,6 +846,37 @@ export default function App() {
       setMemoryEditStatus(message);
     } finally {
       setDeletingMemoryId(null);
+    }
+  };
+
+  const editMemoryContent = async (item: MemoryCardItem) => {
+    const content = window.prompt("编辑长期记忆", item.content)?.trim();
+    if (!content || content === item.content) {
+      return;
+    }
+    setMemoryEditStatus(`正在编辑 #${item.id}`);
+    try {
+      const result = await api.updateMemory(item.id, { content });
+      setMemoryEditStatus(result.updated ? `已编辑 #${item.id}` : `未编辑 #${item.id}: ${result.reason}`);
+      await Promise.all([refreshMemoryCard(), refreshMemoryReflection()]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "update memory failed";
+      setMemoryEditStatus(message);
+    }
+  };
+
+  const reduceMemoryWeight = async (item: MemoryCardItem) => {
+    setMemoryEditStatus(`正在降权 #${item.id}`);
+    try {
+      const result = await api.updateMemory(item.id, {
+        importance: Math.max(0.1, Math.round(item.importance * 50) / 100),
+        confidence: Math.min(item.confidence, 0.6)
+      });
+      setMemoryEditStatus(result.updated ? `已降权 #${item.id}` : `未降权 #${item.id}: ${result.reason}`);
+      await Promise.all([refreshMemoryCard(), refreshMemoryReflection()]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "reduce memory weight failed";
+      setMemoryEditStatus(message);
     }
   };
 
@@ -2297,6 +2352,24 @@ export default function App() {
                           section.items.map((item) => (
                             <div className="memory-card-entry" key={item.id}>
                               <p title={`${item.importance}/${item.confidence}`}>{item.content}</p>
+                              <button
+                                aria-label={`编辑记忆 ${item.id}`}
+                                className="icon-button"
+                                onClick={() => void editMemoryContent(item)}
+                                title="编辑这条长期记忆"
+                                type="button"
+                              >
+                                <Pencil size={14} />
+                              </button>
+                              <button
+                                aria-label={`降权记忆 ${item.id}`}
+                                className="icon-button"
+                                onClick={() => void reduceMemoryWeight(item)}
+                                title="降低这条记忆的重要性"
+                                type="button"
+                              >
+                                <SlidersHorizontal size={14} />
+                              </button>
                               <button
                                 aria-label={`停用记忆 ${item.id}`}
                                 className="icon-button danger"

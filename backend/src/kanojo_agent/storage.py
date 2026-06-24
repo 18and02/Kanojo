@@ -181,6 +181,42 @@ class MemoryStore:
             ).fetchone()
         return dict(row) if row else None
 
+    def update_memory(
+        self,
+        memory_id: int,
+        *,
+        content: str | None = None,
+        importance: float | None = None,
+        confidence: float | None = None,
+    ) -> dict[str, Any] | None:
+        updates: list[str] = []
+        params: list[Any] = []
+        if content is not None:
+            updates.append("content = ?")
+            params.append(content)
+        if importance is not None:
+            updates.append("importance = ?")
+            params.append(importance)
+        if confidence is not None:
+            updates.append("confidence = ?")
+            params.append(confidence)
+        if not updates:
+            return self.memory_by_id(memory_id)
+
+        updates.append("updated_at = ?")
+        params.append(utc_now())
+        params.append(memory_id)
+        with self.connect() as conn:
+            conn.execute(
+                f"""
+                UPDATE memories
+                SET {", ".join(updates)}
+                WHERE id = ?
+                """,
+                tuple(params),
+            )
+        return self.memory_by_id(memory_id)
+
     def active_memories_matching_content(
         self, patterns: list[str], limit: int = 100
     ) -> list[dict[str, Any]]:

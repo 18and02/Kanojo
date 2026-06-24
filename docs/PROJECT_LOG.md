@@ -304,3 +304,14 @@
 - 自检:
   - bundled `pnpm build`: passed
   - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 42 passed
+
+### Goal 继续优化循环: 记忆编辑与降权
+
+- 后端新增 `PATCH /memories/{memory_id}`,支持更新长期记忆内容、重要性和置信度。
+- 存储层新增 `update_memory`,保留软删除语义,只更新时间戳和指定字段。
+- 桌面端记忆名片每条记忆新增编辑、降权和停用三类操作。
+- preload 与 browser fallback API 均接入 `updateMemory`。
+- 自检:
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 43 passed
+  - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed
+  - bundled `pnpm build`: passed

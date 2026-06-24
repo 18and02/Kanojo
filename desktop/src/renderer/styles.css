@@ -662,7 +662,7 @@ select {
 
 .memory-card-entry {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 28px;
+  grid-template-columns: minmax(0, 1fr) repeat(3, 28px);
   align-items: start;
   gap: 6px;
   margin-top: 5px;

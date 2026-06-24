@@ -845,6 +845,33 @@ def test_delete_memory_soft_deactivates_local_memory(tmp_path, monkeypatch) -> N
     assert store.memory_card()["memory_count"] == 0
 
 
+def test_update_memory_edits_content_and_weight(tmp_path, monkeypatch) -> None:
+    from kanojo_agent import main
+
+    store = MemoryStore(tmp_path / "update-memory.db")
+    memory_id = store.add_memory("preference", "用户喜欢旧音色", importance=0.8, confidence=0.9)
+    monkeypatch.setattr(main, "store", store)
+    client = TestClient(main.app)
+
+    response = client.patch(
+        f"/memories/{memory_id}",
+        json={
+            "content": "用户喜欢柔和普通话音色",
+            "importance": 0.4,
+            "confidence": 0.6,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["updated"] is True
+    updated = store.memory_by_id(memory_id)
+    assert updated["content"] == "用户喜欢柔和普通话音色"
+    assert updated["importance"] == 0.4
+    assert updated["confidence"] == 0.6
+    assert updated["status"] == "active"
+
+
 def test_cleanup_test_memories_dry_run_and_apply(tmp_path, monkeypatch) -> None:
     from kanojo_agent import main
 

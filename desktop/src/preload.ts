@@ -105,6 +105,20 @@ contextBridge.exposeInMainWorld("kanojoApi", {
     return response.json();
   },
   memoryCardExport: async (format: MemoryCardExportFormat) => fetchMemoryCardExport(format),
+  updateMemory: async (
+    memoryId: number,
+    patch: { content?: string; importance?: number; confidence?: number }
+  ) => {
+    const response = await fetch(`${backendBaseUrl}/memories/${memoryId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch)
+    });
+    if (!response.ok) {
+      throw new Error(`Memory update request failed: ${response.status}`);
+    }
+    return response.json();
+  },
   deactivateMemory: async (memoryId: number) => {
     const response = await fetch(`${backendBaseUrl}/memories/${memoryId}`, {
       method: "DELETE"

@@ -69,6 +69,12 @@ class MemoryCreateRequest(BaseModel):
     confidence: float = Field(default=0.7, ge=0, le=1)
 
 
+class MemoryUpdateRequest(BaseModel):
+    content: str | None = Field(default=None, min_length=1)
+    importance: float | None = Field(default=None, ge=0, le=1)
+    confidence: float | None = Field(default=None, ge=0, le=1)
+
+
 class RoutedMemoryWriteRequest(MemoryCreateRequest):
     source_message_id: int | None = Field(default=None, ge=1)
     deduplicate: bool = False
@@ -404,6 +410,28 @@ def deactivate_memory(memory_id: int) -> dict[str, Any]:
         "id": memory_id,
         "deactivated": deactivated == 1,
         "reason": "memory soft-deactivated",
+        "memory": updated,
+    }
+
+
+@app.patch("/memories/{memory_id}")
+def update_memory(memory_id: int, request: MemoryUpdateRequest) -> dict[str, Any]:
+    memory = store.memory_by_id(memory_id)
+    if memory is None:
+        raise HTTPException(status_code=404, detail="memory not found")
+    update_data = request.model_dump(exclude_unset=True)
+    if not update_data:
+        return {
+            "id": memory_id,
+            "updated": False,
+            "reason": "no update fields provided",
+            "memory": memory,
+        }
+    updated = store.update_memory(memory_id, **update_data)
+    return {
+        "id": memory_id,
+        "updated": True,
+        "reason": "memory updated",
         "memory": updated,
     }
 
