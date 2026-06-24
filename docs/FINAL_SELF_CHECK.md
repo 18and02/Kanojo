@@ -87,7 +87,7 @@ release 打包:
 1. 引入 NSIS/MSI installer 打包器。
 2. 替换最终 Live2D / 视觉资产。
 3. 增加更完整的记忆审核工作流,例如批量批准、批量拒绝和修改后批准。
-4. 将 peer 候选地址扫描进一步接入桌面端一键诊断。
+4. 增加从桌面端应用推荐 peer URL 到 `.env` 的受控配置流程。
 
 ## 2026-06-24 继续优化循环
 
@@ -96,5 +96,6 @@ release 打包:
 - 桌面启动: `scripts/start_desktop.ps1` 新增 `-EnsureBackend`,启动桌面前可自动拉起 PC 后端。
 - 评测报告: `scripts/export_evaluation_snapshot.ps1` 默认生成 `evaluation-report.md`,也可单独运行 `scripts/write_evaluation_report.ps1`。
 - 桌面体验:侧栏增加节点告警条,自动刷新拓扑状态,直接显示 peer 不可用、写回未就绪、PC 推理节点和 Mac 委托 PC 等状态。
+- 桌面诊断:节点拓扑面板新增“一键诊断”,并发扫描候选 Mac/PC 地址,按当前节点角色推荐最佳 peer。
 - 冷启动处理:新增 `scripts/prewarm_peer_inference.sh`,Mac 侧可一条命令预热 PC peer。
 - 记忆治理:桌面端记忆名片每条记忆新增软停用按钮,复用后端 `DELETE /memories/{id}`,停用后刷新名片和反思摘要。

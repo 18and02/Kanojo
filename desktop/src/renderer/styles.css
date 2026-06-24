@@ -539,6 +539,42 @@ select {
   padding-left: 8px;
 }
 
+.peer-scan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.peer-scan-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 24px;
+  border-top: 1px solid #e4e8ef;
+  color: #627080;
+  font-size: 12px;
+}
+
+.peer-scan-item span,
+.peer-scan-item strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.peer-scan-item strong {
+  max-width: 120px;
+  color: #7b8794;
+  font-weight: 600;
+  text-align: right;
+}
+
+.peer-scan-item.ok strong {
+  color: #28705f;
+}
+
 .event-list {
   display: flex;
   flex-direction: column;

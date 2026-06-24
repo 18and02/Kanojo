@@ -1,6 +1,14 @@
 import { contextBridge, ipcRenderer } from "electron";
 
 const backendBaseUrl = "http://127.0.0.1:8787";
+const peerScanTimeoutMs = 3000;
+const defaultPeerScanCandidates = [
+  "http://kanojo-mac.local:8787",
+  "http://kanojo-mac-alt.local:8787",
+  "http://kanojo-mac.local:8787",
+  "http://kanojo-pc.local:8787",
+  "http://kanojo-pc-alt.local:8787"
+];
 
 type EvaluationRecordRequest = {
   event_type: string;
@@ -19,6 +27,18 @@ type ActivityEventRequest = {
 };
 
 type MemoryCardExportFormat = "markdown" | "json";
+
+type PeerScanRole = "mac_home" | "pc_inference";
+
+type PeerScanResult = {
+  index: number;
+  base_url: string;
+  health: boolean;
+  status: boolean;
+  role: string | null;
+  node_name: string | null;
+  error: string | null;
+};
 
 contextBridge.exposeInMainWorld("kanojoApi", {
   chat: async (text: string) => {
@@ -65,6 +85,8 @@ contextBridge.exposeInMainWorld("kanojoApi", {
     }
     return response.json();
   },
+  peerScan: async (preferredRole: PeerScanRole, candidates = defaultPeerScanCandidates) =>
+    scanPeerCandidates(preferredRole, candidates, peerScanTimeoutMs),
   prewarmInference: async () => {
     const response = await fetch(`${backendBaseUrl}/node/inference/prewarm`, {
       method: "POST",
@@ -239,4 +261,95 @@ function defaultMemoryCardExportFilename(format: MemoryCardExportFormat) {
 
 function defaultMemoryCardMimeType(format: MemoryCardExportFormat) {
   return format === "json" ? "application/json;charset=utf-8" : "text/markdown;charset=utf-8";
+}
+
+function uniquePeerCandidates(candidates: Array<string | null | undefined>) {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const candidate of candidates) {
+    const normalized = candidate?.trim().replace(/\/+$/, "") ?? "";
+    if (!normalized || seen.has(normalized)) {
+      continue;
+    }
+    seen.add(normalized);
+    result.push(normalized);
+  }
+  return result;
+}
+
+async function scanPeerCandidates(
+  preferredRole: PeerScanRole,
+  candidates: string[],
+  timeoutMs: number
+) {
+  const results = await Promise.all(
+    uniquePeerCandidates(candidates).map(async (candidate, index) => {
+      const item: PeerScanResult = {
+        index,
+        base_url: candidate,
+        health: false,
+        status: false,
+        role: null,
+        node_name: null,
+        error: null
+      };
+      try {
+        const health = await fetchJsonWithTimeout<{ status?: string }>(
+          `${candidate}/health`,
+          timeoutMs
+        );
+        item.health = health.status === "ok";
+        const status = await fetchJsonWithTimeout<{
+          node?: { role?: string; name?: string };
+        }>(`${candidate}/node/status`, timeoutMs);
+        item.status = true;
+        item.role = status.node?.role ?? null;
+        item.node_name = status.node?.name ?? null;
+      } catch (error) {
+        item.error = formatErrorMessage(error);
+      }
+      return item;
+    })
+  );
+
+  const roleOrder =
+    preferredRole === "pc_inference" ? ["pc_inference", "mac_home"] : ["mac_home", "pc_inference"];
+  const available = results.filter((item) => item.health && item.status);
+  const best =
+    available.sort((left, right) => {
+      const leftRank = roleOrder.indexOf(left.role ?? "");
+      const rightRank = roleOrder.indexOf(right.role ?? "");
+      return (
+        (leftRank < 0 ? 99 : leftRank) - (rightRank < 0 ? 99 : rightRank) ||
+        left.index - right.index
+      );
+    })[0] ?? null;
+
+  return {
+    preferred_role: preferredRole,
+    best,
+    results,
+    checked_at: new Date().toISOString()
+  };
+}
+
+async function fetchJsonWithTimeout<T>(url: string, timeoutMs: number): Promise<T> {
+  const controller = new AbortController();
+  const timeout = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return response.json();
+  } finally {
+    globalThis.clearTimeout(timeout);
+  }
+}
+
+function formatErrorMessage(error: unknown) {
+  if (error instanceof DOMException && error.name === "AbortError") {
+    return "timeout";
+  }
+  return error instanceof Error ? error.message : "unreachable";
 }

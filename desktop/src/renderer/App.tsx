@@ -323,6 +323,25 @@ type NodeStatus = {
   };
 };
 
+type PeerScanRole = "mac_home" | "pc_inference";
+
+type PeerScanResult = {
+  index: number;
+  base_url: string;
+  health: boolean;
+  status: boolean;
+  role: string | null;
+  node_name: string | null;
+  error: string | null;
+};
+
+type PeerScanSummary = {
+  preferred_role: PeerScanRole;
+  best: PeerScanResult | null;
+  results: PeerScanResult[];
+  checked_at: string;
+};
+
 type NodeAlert = {
   level: "ok" | "warning" | "muted";
   title: string;
@@ -461,6 +480,7 @@ type KanojoApi = {
   health: () => Promise<{ status: string; version: string }>;
   config: () => Promise<AppConfig>;
   nodeStatus: () => Promise<NodeStatus>;
+  peerScan: (preferredRole: PeerScanRole, candidates?: string[]) => Promise<PeerScanSummary>;
   prewarmInference: () => Promise<InferencePrewarmResult>;
   sttStatus: () => Promise<STTStatus>;
   ttsStatus: () => Promise<TTSStatus>;
@@ -491,6 +511,14 @@ declare global {
 }
 
 const backendBaseUrl = "http://127.0.0.1:8787";
+const peerScanTimeoutMs = 3000;
+const defaultPeerScanCandidates = [
+  "http://kanojo-mac.local:8787",
+  "http://kanojo-mac-alt.local:8787",
+  "http://kanojo-mac.local:8787",
+  "http://kanojo-pc.local:8787",
+  "http://kanojo-pc-alt.local:8787"
+];
 
 const browserBackendApi: KanojoApi = {
   chat: async (text: string) => {
@@ -540,6 +568,8 @@ const browserBackendApi: KanojoApi = {
     }
     return response.json();
   },
+  peerScan: async (preferredRole, candidates = defaultPeerScanCandidates) =>
+    scanPeerCandidates(preferredRole, candidates, peerScanTimeoutMs),
   prewarmInference: async () => {
     const response = await fetch(`${backendBaseUrl}/node/inference/prewarm`, {
       method: "POST",
@@ -741,6 +771,9 @@ export default function App() {
   const [evaluationStatus, setEvaluationStatus] = useState("未刷新");
   const [nodeStatus, setNodeStatus] = useState<NodeStatus | null>(null);
   const [nodeStatusText, setNodeStatusText] = useState("未刷新");
+  const [peerScan, setPeerScan] = useState<PeerScanSummary | null>(null);
+  const [peerScanStatus, setPeerScanStatus] = useState("未诊断");
+  const [peerScanBusy, setPeerScanBusy] = useState(false);
   const [prewarmStatus, setPrewarmStatus] = useState("未预热");
   const [prewarmBusy, setPrewarmBusy] = useState(false);
   const [avatarMouthLevel, setAvatarMouthLevel] = useState(0);
@@ -1008,6 +1041,22 @@ export default function App() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "node status failed";
       setNodeStatusText(message);
+    }
+  };
+
+  const diagnosePeerCandidates = async () => {
+    const role = preferredPeerRole(nodeStatus);
+    setPeerScanBusy(true);
+    setPeerScanStatus("诊断中");
+    try {
+      const result = await api.peerScan(role, buildPeerScanCandidates(nodeStatus));
+      setPeerScan(result);
+      setPeerScanStatus(formatPeerScanStatus(result));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "peer scan failed";
+      setPeerScanStatus(message);
+    } finally {
+      setPeerScanBusy(false);
     }
   };
 
@@ -2875,10 +2924,27 @@ export default function App() {
                   <strong>{nodeStatus?.node.peer_timeout_seconds ?? "unknown"}s</strong>
                 </div>
                 <div className="setting-row">
+                  <span>诊断目标</span>
+                  <strong>{preferredPeerRole(nodeStatus)}</strong>
+                </div>
+                <div className="setting-row">
+                  <span>扫描结果</span>
+                  <strong title={peerScanStatus}>{peerScanStatus}</strong>
+                </div>
+                <div className="setting-row">
                   <span>预热</span>
                   <strong title={prewarmStatus}>{prewarmStatus}</strong>
                 </div>
                 <div className="button-row">
+                  <button
+                    className="secondary-button"
+                    disabled={peerScanBusy}
+                    onClick={() => void diagnosePeerCandidates()}
+                    type="button"
+                  >
+                    <SearchCheck size={17} />
+                    <span>{peerScanBusy ? "诊断中" : "一键诊断"}</span>
+                  </button>
                   <button
                     className="secondary-button accent"
                     disabled={prewarmBusy}
@@ -2890,6 +2956,20 @@ export default function App() {
                   </button>
                 </div>
                 <p className="evaluation-status">{nodeStatusText}</p>
+                {peerScan ? (
+                  <div className="peer-scan-list">
+                    {peerScan.results.map((item) => (
+                      <div
+                        className={`peer-scan-item ${item.health && item.status ? "ok" : "muted"}`}
+                        key={item.base_url}
+                        title={item.error ?? item.base_url}
+                      >
+                        <span>{item.base_url}</span>
+                        <strong>{formatPeerScanResult(item)}</strong>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
                 {nodeActionHint ? <p className="node-action-hint">{nodeActionHint}</p> : null}
               </section>
 
@@ -3052,6 +3132,113 @@ async function copyTextToClipboard(text: string) {
   }
 }
 
+function preferredPeerRole(status: NodeStatus | null): PeerScanRole {
+  return status?.node.role === "mac_home" ? "pc_inference" : "mac_home";
+}
+
+function buildPeerScanCandidates(status: NodeStatus | null) {
+  return uniquePeerCandidates([
+    status?.peer.base_url,
+    status?.memory_write_policy.peer_base_url,
+    status?.inference_route_policy.peer_base_url,
+    status?.node.peer_base_url,
+    ...defaultPeerScanCandidates
+  ]);
+}
+
+function uniquePeerCandidates(candidates: Array<string | null | undefined>) {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const candidate of candidates) {
+    const normalized = normalizePeerCandidate(candidate);
+    if (!normalized || seen.has(normalized)) {
+      continue;
+    }
+    seen.add(normalized);
+    result.push(normalized);
+  }
+  return result;
+}
+
+function normalizePeerCandidate(candidate: string | null | undefined) {
+  return candidate?.trim().replace(/\/+$/, "") ?? "";
+}
+
+async function scanPeerCandidates(
+  preferredRole: PeerScanRole,
+  candidates: string[],
+  timeoutMs: number
+): Promise<PeerScanSummary> {
+  const results = await Promise.all(
+    uniquePeerCandidates(candidates).map(async (candidate, index) => {
+      const item: PeerScanResult = {
+        index,
+        base_url: candidate,
+        health: false,
+        status: false,
+        role: null,
+        node_name: null,
+        error: null
+      };
+      try {
+        const health = await fetchJsonWithTimeout<{ status?: string }>(
+          `${candidate}/health`,
+          timeoutMs
+        );
+        item.health = health.status === "ok";
+        const status = await fetchJsonWithTimeout<NodeStatus>(`${candidate}/node/status`, timeoutMs);
+        item.status = true;
+        item.role = status.node?.role ?? null;
+        item.node_name = status.node?.name ?? null;
+      } catch (error) {
+        item.error = formatErrorMessage(error);
+      }
+      return item;
+    })
+  );
+
+  const roleOrder =
+    preferredRole === "pc_inference" ? ["pc_inference", "mac_home"] : ["mac_home", "pc_inference"];
+  const available = results.filter((item) => item.health && item.status);
+  const best =
+    available.sort((left, right) => {
+      const leftRank = roleOrder.indexOf(left.role ?? "");
+      const rightRank = roleOrder.indexOf(right.role ?? "");
+      return (
+        (leftRank < 0 ? 99 : leftRank) - (rightRank < 0 ? 99 : rightRank) ||
+        left.index - right.index
+      );
+    })[0] ?? null;
+
+  return {
+    preferred_role: preferredRole,
+    best,
+    results,
+    checked_at: new Date().toISOString()
+  };
+}
+
+async function fetchJsonWithTimeout<T>(url: string, timeoutMs: number): Promise<T> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return response.json();
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+function formatErrorMessage(error: unknown) {
+  if (error instanceof DOMException && error.name === "AbortError") {
+    return "timeout";
+  }
+  return error instanceof Error ? error.message : "unreachable";
+}
+
 function downloadTextFile(result: MemoryCardExport) {
   const blob = new Blob([result.content], { type: result.mime_type });
   const url = URL.createObjectURL(blob);
@@ -3087,6 +3274,23 @@ function readNotificationState() {
 
 function formatMs(value: number | null | undefined) {
   return value === null || value === undefined ? "无" : `${value} ms`;
+}
+
+function formatPeerScanStatus(scan: PeerScanSummary | null) {
+  if (!scan) {
+    return "未诊断";
+  }
+  if (!scan.best) {
+    return `未找到 ${scan.preferred_role}`;
+  }
+  return `${scan.best.role ?? "unknown"} · ${scan.best.base_url}`;
+}
+
+function formatPeerScanResult(item: PeerScanResult) {
+  if (item.health && item.status) {
+    return `${item.role ?? "unknown"} / ${item.node_name ?? "unknown"}`;
+  }
+  return item.error ?? "不可用";
 }
 
 function summarizeNodeAlert(status: NodeStatus | null): NodeAlert {

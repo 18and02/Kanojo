@@ -85,6 +85,8 @@ cd ~/Projects/Kanojo
 bash scripts/find_peer.sh --role pc_inference
 ```
 
+桌面端也可以在“节点拓扑”面板点击“一键诊断”,它会并发检查候选节点并显示最佳 peer。
+
 预期结果:
 
 ```json

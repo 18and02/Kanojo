@@ -352,3 +352,12 @@
   - `.\scripts\find_peer.ps1 -PreferredRole pc_inference`: best=`http://kanojo-pc.local:8787`,role=`pc_inference`
   - `bash scripts/find_peer.sh --role mac_home`: best=`http://kanojo-mac.local:8787`,role=`mac_home`
   - `bash scripts/find_peer.sh --role pc_inference`: best=`http://kanojo-pc.local:8787`,role=`pc_inference`
+
+### Goal 继续优化循环: 桌面 peer 一键诊断
+
+- 节点拓扑面板新增“一键诊断”按钮,根据当前节点角色自动优先查找 `mac_home` 或 `pc_inference`。
+- 桌面端会把当前配置的 peer URL 与默认候选地址去重后并发探测 `/health` 和 `/node/status`。
+- 诊断结果展示最佳 peer、目标角色和每个候选地址的角色/节点名/错误信息。
+- preload 与 browser fallback API 均接入 `peerScan`,确保 Electron 与浏览器预览行为一致。
+- 自检:
+  - bundled `pnpm build`: passed
