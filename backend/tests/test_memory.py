@@ -334,6 +334,73 @@ def test_hybrid_empty_llm_falls_back_to_heuristic(tmp_path) -> None:
     assert error == "llm returned no durable candidates"
 
 
+def test_operational_test_text_is_not_extracted(tmp_path) -> None:
+    settings = make_settings(
+        tmp_path,
+        llm_base_url="http://127.0.0.1:1234/v1",
+        memory_extraction_mode="hybrid",
+    )
+
+    class HallucinatingLLM(LLMClient):
+        @property
+        def configured(self) -> bool:
+            return True
+
+        async def extract_memory_json(self, user_text: str):
+            return [
+                {
+                    "kind": "preference",
+                    "content": "用户计划购买 Mac mini",
+                    "importance": 1,
+                    "confidence": 1,
+                    "reason": "hallucinated",
+                }
+            ]
+
+    method, candidates, error = asyncio.run(
+        MemoryExtractor(settings, HallucinatingLLM(settings)).extract(
+            "真实双机联调：我在2026年6月24日完成 PC 推理节点和 Mac mini 常驻记忆节点的联调验证。"
+        )
+    )
+
+    assert method == "filtered"
+    assert candidates == []
+    assert error == "operational test text is not durable user memory"
+
+
+def test_hybrid_rejects_unsupported_llm_candidate_and_falls_back(tmp_path) -> None:
+    settings = make_settings(
+        tmp_path,
+        llm_base_url="http://127.0.0.1:1234/v1",
+        memory_extraction_mode="hybrid",
+    )
+
+    class UnsupportedLLM(LLMClient):
+        @property
+        def configured(self) -> bool:
+            return True
+
+        async def extract_memory_json(self, user_text: str):
+            return [
+                {
+                    "kind": "preference",
+                    "content": "用户计划购买 Mac mini",
+                    "importance": 1,
+                    "confidence": 1,
+                    "reason": "hallucinated",
+                }
+            ]
+
+    method, candidates, error = asyncio.run(
+        MemoryExtractor(settings, UnsupportedLLM(settings)).extract("我明天有英语考试")
+    )
+
+    assert method == "heuristic_fallback"
+    assert candidates[0].kind == "event"
+    assert candidates[0].content == "我明天有英语考试"
+    assert error == "llm returned no durable candidates"
+
+
 def test_mock_reply_stream(tmp_path) -> None:
     settings = Settings(
         db_path=tmp_path / "test.db",

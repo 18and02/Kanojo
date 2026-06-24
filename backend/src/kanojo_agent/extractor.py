@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import re
 from typing import Any
 
 from kanojo_agent.llm import LLMClient
@@ -9,6 +10,7 @@ from kanojo_agent.settings import Settings
 
 
 VALID_KINDS = {"event", "preference", "relationship", "reflection"}
+OPERATIONAL_TEST_MARKERS = ("联调", "冒烟", "自检", "链路验证")
 
 
 @dataclass(frozen=True)
@@ -52,6 +54,9 @@ class MemoryExtractor:
         if mode not in {"heuristic", "llm", "hybrid"}:
             mode = "hybrid"
 
+        if is_operational_test_text(text):
+            return "filtered", [], "operational test text is not durable user memory"
+
         if mode in {"llm", "hybrid"} and self.llm.configured:
             try:
                 candidates = await self._extract_with_llm(text)
@@ -75,7 +80,7 @@ class MemoryExtractor:
         candidates: list[MemoryCandidate] = []
         for item in raw_items:
             candidate = self._candidate_from_dict(item, method="llm")
-            if candidate:
+            if candidate and candidate_supported_by_source(candidate, text):
                 candidates.append(candidate)
         return candidates
 
@@ -135,6 +140,36 @@ def clamp_float(value: Any, *, default: float) -> float:
     except (TypeError, ValueError):
         return default
     return max(0.0, min(1.0, numeric))
+
+
+def is_operational_test_text(text: str) -> bool:
+    return any(marker in text for marker in OPERATIONAL_TEST_MARKERS)
+
+
+def candidate_supported_by_source(candidate: MemoryCandidate, source_text: str) -> bool:
+    content = normalize_for_support_check(candidate.content)
+    source = normalize_for_support_check(source_text)
+    if not content or not source:
+        return False
+    if content in source or source in content:
+        return True
+
+    content_bigrams = character_bigrams(content)
+    if not content_bigrams:
+        return content in source
+    source_bigrams = character_bigrams(source)
+    overlap_ratio = len(content_bigrams & source_bigrams) / len(content_bigrams)
+    return overlap_ratio >= 0.55
+
+
+def normalize_for_support_check(text: str) -> str:
+    return re.sub(r"[\W_]+", "", text.lower(), flags=re.UNICODE)
+
+
+def character_bigrams(text: str) -> set[str]:
+    if len(text) < 2:
+        return {text} if text else set()
+    return {text[index : index + 2] for index in range(len(text) - 1)}
 
 
 def validate_candidate(candidate: MemoryCandidate) -> tuple[bool, str]:

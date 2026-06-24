@@ -1,5 +1,6 @@
 param(
     [int]$Port = 8787,
+    [string]$BindAddress = "127.0.0.1",
     [switch]$Restart
 )
 
@@ -49,12 +50,12 @@ try {
     }
     $env:PYTHONPATH = Join-Path $Backend "src"
     Start-Process -FilePath $Python `
-        -ArgumentList @("-m", "uvicorn", "kanojo_agent.main:app", "--host", "127.0.0.1", "--port", "$Port") `
+        -ArgumentList @("-m", "uvicorn", "kanojo_agent.main:app", "--host", $BindAddress, "--port", "$Port") `
         -WorkingDirectory $Backend `
         -WindowStyle Hidden
     Start-Sleep -Seconds 2
     Invoke-RestMethod -Uri "http://127.0.0.1:$Port/health" | Out-Null
-    Write-Host "Backend started at http://127.0.0.1:$Port"
+    Write-Host "Backend started at http://$BindAddress`:$Port"
 }
 finally {
     Pop-Location

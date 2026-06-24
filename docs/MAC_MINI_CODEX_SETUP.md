@@ -307,11 +307,23 @@ curl http://127.0.0.1:8787/memory-card
 
 ### 9.3 Mac 委托 PC 推理
 
-Mac `.env` 后续可以设置:
+Mac `.env` 后续可以设置。当前 PC 已发现的优先局域网地址是 `kanojo-pc.local`,PC 后端需要用 `0.0.0.0` 监听:
+
+```powershell
+.\scripts\start_backend.ps1 -BindAddress 0.0.0.0 -Restart
+```
+
+如果 Windows 防火墙开启,需要用管理员 PowerShell 放行 PC 的 `8787` 入站:
+
+```powershell
+New-NetFirewallRule -DisplayName "Kanojo Backend 8787" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8787 -Profile Private
+```
+
+然后在 Mac 的 `backend/.env` 设置:
 
 ```env
 KANOJO_INFERENCE_PRIMARY=auto
-KANOJO_PEER_BASE_URL=http://PC的局域网IP:8787
+KANOJO_PEER_BASE_URL=http://kanojo-pc.local:8787
 ```
 
 在 Mac 调:

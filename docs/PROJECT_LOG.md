@@ -120,3 +120,24 @@
   - PC `/node/peer/memory-card`: configured=`true`, available=`true`, Mac memory_count 可返回
   - PC `/memories` 测试写入: target=`peer`, remote target=`local`,Mac memory_count 从 0 增至 1
   - PC 本地 LLM `/v1/models`: `qwen2.5:14b` 可用
+
+### 真实双机联调
+
+- `scripts/start_backend.ps1` 新增 `-BindAddress`,用于把 PC 后端从仅本机监听切换为局域网监听。
+- PC 后端已用 `.\scripts\start_backend.ps1 -BindAddress 0.0.0.0 -Restart` 启动,当前监听 `0.0.0.0:8787`。
+- PC 优先局域网地址为 `kanojo-pc.local`,备用可达地址为 `kanojo-pc-alt.local`。
+- PC -> Mac 链路已实测:
+  - Mac `/node/status`: role=`mac_home`, memory primary=`local`
+  - PC `/node/status`: role=`pc_inference`, memory primary=`peer`, peer available=`true`
+  - PC `/node/peer/memory-card`: configured=`true`, available=`true`, memory_count 可返回
+  - PC `/chat`: inference_route.selected=`local`, llm_model=`qwen2.5:14b`
+  - PC `/chat` 的联调文本不再写入长期记忆,Mac memory_count 保持不变
+- 修复 LLM 记忆抽取误写风险:
+  - 联调/冒烟/自检/链路验证类文本直接过滤,不进入长期记忆
+  - LLM 抽取候选必须被原文直接支持,否则丢弃并在 hybrid 下回退启发式抽取
+- 自检:
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 39 passed
+  - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed
+- 待 Mac -> PC 反向委托推理:
+  - Mac `.env` 需要设置 `KANOJO_PEER_BASE_URL=http://kanojo-pc.local:8787` 并重启
+  - Windows 防火墙当前为 `BlockInbound`;普通权限创建 `Kanojo Backend 8787` 入站规则失败,需要管理员权限放行 TCP 8787
