@@ -315,3 +315,13 @@
   - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 43 passed
   - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed
   - bundled `pnpm build`: passed
+
+### Goal 继续优化循环: peer 超时可观测与 Mac 默认值
+
+- `/node/status` 的 `node` 摘要新增 `peer_timeout_seconds`,方便桌面端和联调脚本直接确认当前 peer 超时配置。
+- 桌面端节点拓扑面板新增 Peer 超时展示。
+- `docs/MAC_MINI_CODEX_SETUP.md` 将 Mac 示例 `.env` 的 `KANOJO_PEER_TIMEOUT` 从 5 秒调整到 12 秒,并明确仍建议优先预热 PC peer。
+- 自检:
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 43 passed
+  - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed
+  - bundled `pnpm build`: passed

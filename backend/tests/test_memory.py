@@ -629,6 +629,7 @@ def test_node_status_endpoint_without_peer(tmp_path, monkeypatch) -> None:
     payload = response.json()
     assert payload["node"]["name"] == "local-test"
     assert payload["node"]["role"] == "standalone"
+    assert payload["node"]["peer_timeout_seconds"] == 3
     assert payload["memory_write_policy"]["primary"] == "local"
     assert payload["peer"]["configured"] is False
     assert payload["peer"]["available"] is False

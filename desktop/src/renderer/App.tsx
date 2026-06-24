@@ -270,6 +270,7 @@ type NodeStatus = {
     role: string;
     db_path: string;
     peer_base_url?: string | null;
+    peer_timeout_seconds?: number;
     llm_configured: boolean;
     tts_configured: boolean;
     stt_configured: boolean;
@@ -2760,6 +2761,10 @@ export default function App() {
                   <strong title={nodeStatus?.inference_route_policy.note ?? "unknown"}>
                     {nodeStatus?.inference_route_policy.primary ?? "unknown"}
                   </strong>
+                </div>
+                <div className="setting-row">
+                  <span>Peer 超时</span>
+                  <strong>{nodeStatus?.node.peer_timeout_seconds ?? "unknown"}s</strong>
                 </div>
                 <div className="setting-row">
                   <span>预热</span>

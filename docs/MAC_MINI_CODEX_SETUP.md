@@ -156,7 +156,7 @@ KANOJO_OFFLINE_WRITE_BEHAVIOR=local_only
 
 KANOJO_INFERENCE_PRIMARY=auto
 KANOJO_PEER_BASE_URL=
-KANOJO_PEER_TIMEOUT=5
+KANOJO_PEER_TIMEOUT=12
 
 KANOJO_MEMORY_EXTRACTION=heuristic
 
@@ -175,6 +175,7 @@ EOF
 - `KANOJO_OFFLINE_WRITE_BEHAVIOR=local_only`:Mac 本地写入,不依赖 peer。
 - `KANOJO_INFERENCE_PRIMARY=auto`:后续 PC peer 配好后,Mac 可以优先委托 PC 推理。
 - `KANOJO_PEER_BASE_URL=`:PC 节点还没配好前先留空。
+- `KANOJO_PEER_TIMEOUT=12`:演示时给 PC 本地模型冷启动留出缓冲。仍建议优先预热 PC peer。
 - `KANOJO_MEMORY_EXTRACTION=heuristic`:Mac 暂时用启发式抽取,降低常驻环境复杂度。
 
 确认 `.env` 存在:

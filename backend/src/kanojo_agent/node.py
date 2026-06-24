@@ -39,6 +39,7 @@ def node_config_summary(settings: Settings) -> dict[str, Any]:
         "role": normalized_node_role(settings.node_role),
         "db_path": str(settings.db_path),
         "peer_base_url": normalize_base_url(settings.peer_base_url),
+        "peer_timeout_seconds": settings.peer_timeout_seconds,
         "llm_configured": bool(settings.llm_base_url),
         "tts_configured": bool(settings.tts_base_url),
         "stt_configured": bool(settings.stt_base_url),

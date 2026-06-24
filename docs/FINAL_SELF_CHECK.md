@@ -87,7 +87,7 @@ release 打包:
 1. 引入 NSIS/MSI installer 打包器。
 2. 替换最终 Live2D / 视觉资产。
 3. 增加记忆人工确认队列。
-4. 适当增大 Mac `KANOJO_PEER_TIMEOUT` 或保证 PC 开机后预热,进一步降低冷启动回退概率。
+4. 替换 Mac/PC 固定 IP 为可配置的局域网发现或健康检查候选列表。
 
 ## 2026-06-24 继续优化循环
 
