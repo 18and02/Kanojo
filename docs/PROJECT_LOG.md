@@ -141,3 +141,10 @@
 - 待 Mac -> PC 反向委托推理:
   - Mac `.env` 需要设置 `KANOJO_PEER_BASE_URL=http://kanojo-pc.local:8787` 并重启
   - Windows 防火墙当前为 `BlockInbound`;普通权限创建 `Kanojo Backend 8787` 入站规则失败,需要管理员权限放行 TCP 8787
+- PC 防火墙规则已由管理员 PowerShell 成功添加:
+  - `Kanojo Backend 8787`
+  - Direction=`Inbound`, Action=`Allow`, Protocol=`TCP`, LocalPort=`8787`, Profile=`Private`
+- PC 局域网推理落点已复核:
+  - `http://kanojo-pc.local:8787/health`: ok
+  - `http://kanojo-pc.local:8787/node/status`: role=`pc_inference`, peer available=`true`
+  - `http://kanojo-pc.local:8787/node/inference/chat`: route.selected=`local`, llm_model=`qwen2.5:14b`
