@@ -105,6 +105,15 @@ contextBridge.exposeInMainWorld("kanojoApi", {
     return response.json();
   },
   memoryCardExport: async (format: MemoryCardExportFormat) => fetchMemoryCardExport(format),
+  deactivateMemory: async (memoryId: number) => {
+    const response = await fetch(`${backendBaseUrl}/memories/${memoryId}`, {
+      method: "DELETE"
+    });
+    if (!response.ok) {
+      throw new Error(`Memory deactivate request failed: ${response.status}`);
+    }
+    return response.json();
+  },
   memoryCardSnapshots: async () => {
     const response = await fetch(`${backendBaseUrl}/memory-card/snapshots?session_id=default`);
     if (!response.ok) {

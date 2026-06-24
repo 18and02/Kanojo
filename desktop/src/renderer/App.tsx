@@ -18,6 +18,7 @@ import {
   Settings,
   ShieldCheck,
   Square,
+  Trash2,
   Volume2,
   VolumeX,
   Zap
@@ -75,6 +76,13 @@ type MemoryCardExport = {
   filename: string;
   content: string;
   mime_type: string;
+};
+
+type MemoryDeactivationResult = {
+  id: number;
+  deactivated: boolean;
+  reason: string;
+  memory?: MemoryCardItem | null;
 };
 
 type MemoryCardSnapshotSummary = {
@@ -430,6 +438,7 @@ type KanojoApi = {
   memoryCard: () => Promise<MemoryCard>;
   memoryCardReflection: () => Promise<MemoryReflectionSummary>;
   memoryCardExport: (format: MemoryCardExportFormat) => Promise<MemoryCardExport>;
+  deactivateMemory: (memoryId: number) => Promise<MemoryDeactivationResult>;
   memoryCardSnapshots: () => Promise<{ items: MemoryCardSnapshotSummary[] }>;
   createMemoryCardSnapshot: (label?: string) => Promise<MemoryCardSnapshot>;
   memoryCardSnapshotCompare: (snapshotId: number) => Promise<MemoryCardComparison>;
@@ -536,6 +545,15 @@ const browserBackendApi: KanojoApi = {
     return response.json();
   },
   memoryCardExport: async (format: MemoryCardExportFormat) => fetchMemoryCardExport(format),
+  deactivateMemory: async (memoryId: number) => {
+    const response = await fetch(`${backendBaseUrl}/memories/${memoryId}`, {
+      method: "DELETE"
+    });
+    if (!response.ok) {
+      throw new Error(`Memory deactivate request failed: ${response.status}`);
+    }
+    return response.json();
+  },
   memoryCardSnapshots: async () => {
     const response = await fetch(`${backendBaseUrl}/memory-card/snapshots?session_id=default`);
     if (!response.ok) {
@@ -644,6 +662,8 @@ export default function App() {
   const [memoryCard, setMemoryCard] = useState<MemoryCard | null>(null);
   const [memoryCardStatus, setMemoryCardStatus] = useState("未刷新");
   const [memoryCardExportStatus, setMemoryCardExportStatus] = useState("未导出");
+  const [memoryEditStatus, setMemoryEditStatus] = useState("未编辑");
+  const [deletingMemoryId, setDeletingMemoryId] = useState<number | null>(null);
   const [memoryReflection, setMemoryReflection] = useState<MemoryReflectionSummary | null>(null);
   const [memoryReflectionStatus, setMemoryReflectionStatus] = useState("未刷新");
   const [memoryCardSnapshots, setMemoryCardSnapshots] = useState<MemoryCardSnapshotSummary[]>([]);
@@ -780,6 +800,27 @@ export default function App() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "export memory card failed";
       setMemoryCardExportStatus(message);
+    }
+  };
+
+  const deactivateMemory = async (item: MemoryCardItem) => {
+    const confirmed = window.confirm(`停用这条长期记忆?\n\n${item.content}`);
+    if (!confirmed) {
+      return;
+    }
+    setDeletingMemoryId(item.id);
+    setMemoryEditStatus(`正在停用 #${item.id}`);
+    try {
+      const result = await api.deactivateMemory(item.id);
+      setMemoryEditStatus(
+        result.deactivated ? `已停用 #${item.id}` : `未停用 #${item.id}: ${result.reason}`
+      );
+      await Promise.all([refreshMemoryCard(), refreshMemoryReflection()]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "deactivate memory failed";
+      setMemoryEditStatus(message);
+    } finally {
+      setDeletingMemoryId(null);
     }
   };
 
@@ -2253,16 +2294,26 @@ export default function App() {
                           <p className="empty">暂无</p>
                         ) : (
                           section.items.map((item) => (
-                            <p key={item.id} title={`${item.importance}/${item.confidence}`}>
-                              {item.content}
-                            </p>
+                            <div className="memory-card-entry" key={item.id}>
+                              <p title={`${item.importance}/${item.confidence}`}>{item.content}</p>
+                              <button
+                                aria-label={`停用记忆 ${item.id}`}
+                                className="icon-button danger"
+                                disabled={deletingMemoryId === item.id}
+                                onClick={() => void deactivateMemory(item)}
+                                title="停用这条长期记忆"
+                                type="button"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           ))
                         )}
                       </article>
                     ))}
                   </div>
                   <p className="evaluation-status">
-                    {memoryCardStatus} · {memoryCardExportStatus}
+                    {memoryCardStatus} · {memoryCardExportStatus} · {memoryEditStatus}
                   </p>
                 </section>
               ) : null}

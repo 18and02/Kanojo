@@ -268,3 +268,12 @@
   - PowerShell / shell 脚本语法检查: passed
   - `.\scripts\export_evaluation_snapshot.ps1 -OutDir exports-loop2`: passed,生成 `evaluation-report.md`
   - `.\scripts\dual_node_demo.ps1`: passed=`true`,Mac `/chat` 委托 PC peer 推理,client_elapsed_ms 约 1124ms
+
+### Goal 继续优化循环: 记忆软停用 UI
+
+- 桌面端记忆名片每条记忆新增软停用按钮,调用 `DELETE /memories/{id}`。
+- 停用前进行用户确认,停用后刷新记忆名片和反思摘要,并在名片状态行显示结果。
+- preload 与 browser fallback API 均接入 `deactivateMemory`。
+- 自检:
+  - bundled `pnpm build`: passed
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 42 passed

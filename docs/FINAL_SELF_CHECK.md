@@ -86,9 +86,9 @@ release 打包:
 
 1. 引入 installer 打包器。
 2. 替换最终 Live2D / 视觉资产。
-3. 增加更严格的记忆编辑 UI,支持人工确认、删除和降权。
-4. 增强 peer 断线后的桌面端操作建议和一键诊断。
-5. 增加评测报告批量对比,支持多次导出之间的指标变化。
+3. 增强 peer 断线后的桌面端操作建议和一键诊断。
+4. 增加评测报告批量对比,支持多次导出之间的指标变化。
+5. 增加记忆降权、编辑和人工确认队列。
 6. 适当增大 Mac `KANOJO_PEER_TIMEOUT` 或保证 PC 开机后预热,进一步降低冷启动回退概率。
 
 ## 2026-06-24 继续优化循环
@@ -99,3 +99,4 @@ release 打包:
 - 评测报告: `scripts/export_evaluation_snapshot.ps1` 默认生成 `evaluation-report.md`,也可单独运行 `scripts/write_evaluation_report.ps1`。
 - 桌面体验:侧栏增加节点告警条,自动刷新拓扑状态,直接显示 peer 不可用、写回未就绪、PC 推理节点和 Mac 委托 PC 等状态。
 - 冷启动处理:新增 `scripts/prewarm_peer_inference.sh`,Mac 侧可一条命令预热 PC peer。
+- 记忆治理:桌面端记忆名片每条记忆新增软停用按钮,复用后端 `DELETE /memories/{id}`,停用后刷新名片和反思摘要。
