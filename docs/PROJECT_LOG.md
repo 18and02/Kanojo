@@ -417,3 +417,11 @@
 - `docs/DEMO_RUNBOOK.md` 与 `docs/FINAL_SELF_CHECK.md` 更新桌面配置闭环说明。
 - 自检:
   - bundled `pnpm build`: passed
+
+### Goal 继续优化循环: release SHA256 校验
+
+- `scripts/build_release.ps1` 现在生成 `SHA256SUMS-<commit>.txt`,包含源码 zip 与桌面 portable zip 的 SHA256。
+- `docs/SHOWCASE_PACKAGE.md` 与 `docs/FINAL_SELF_CHECK.md` 增加交付包完整性校验说明。
+- 自检:
+  - PowerShell 语法检查: passed
+  - `.\scripts\build_release.ps1`: passed,生成 `SHA256SUMS-fbbe3ba.txt`

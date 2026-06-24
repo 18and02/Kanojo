@@ -86,8 +86,8 @@ release 打包:
 
 1. 引入 NSIS/MSI installer 打包器。
 2. 替换最终 Live2D / 视觉资产。
-3. 增加 NSIS/MSI 之外的离线依赖完整性校验。
-4. 增加最终演示素材的截图/录屏自动采集。
+3. 增加最终演示素材的截图/录屏自动采集。
+4. 增加 release 包上传到 GitHub Release 的自动化流程。
 
 ## 2026-06-24 继续优化循环
 
@@ -104,3 +104,4 @@ release 打包:
 - 记忆审计:新增单条拒绝、批准前编辑、批量批准和批量拒绝,桌面端审计面板已接入。
 - 审计历史:后端和桌面端支持按 accepted/pending/rejected 筛选、关键词搜索和加载更多分页。
 - 评测报告: `evaluation-report.md` 新增 Coverage Scorecard,自动提示双机、记忆、主动心跳和形象评测证据缺口。
+- 交付校验: `build_release.ps1` 生成 `SHA256SUMS-<commit>.txt`,用于校验源码包和 portable 包完整性。
