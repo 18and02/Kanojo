@@ -100,10 +100,23 @@ Get-ChildItem ([Environment]::GetFolderPath("Startup")) -Filter "Kanojo Backend.
 
 ```text
 release/kanojo-source-<commit>.zip
+release/kanojo-desktop-portable-<commit>.zip
 desktop/out/
 ```
 
-当前仓库没有引入 installer 打包器,因此 `desktop/out/` 是 Electron/Vite 构建产物,`release/*.zip` 是可交付源码包。答辩演示以本地启动脚本为准。
+`kanojo-desktop-portable-<commit>.zip` 内包含 Electron runtime 和已构建桌面端,解压后运行 `Kanojo.exe`。它仍需要本机后端已经启动,推荐先执行:
+
+```powershell
+.\scripts\start_backend.ps1 -BindAddress 0.0.0.0
+```
+
+也可以只生成桌面 portable 包:
+
+```powershell
+.\scripts\build_desktop_portable.ps1
+```
+
+当前仓库仍未引入 NSIS/MSI installer。已尝试接入 `electron-builder`,但当前 pnpm 供应链校验输出会污染 builder 读取依赖树的 JSON 输出,因此先采用可验证的 portable 交付包作为答辩分发形态。
 
 ## 评测报告
 

@@ -286,3 +286,13 @@
 - 自检:
   - PowerShell 语法检查: passed
   - `.\scripts\compare_evaluation_exports.ps1 -BeforeDir exports-report-test -AfterDir exports-loop2`: passed
+
+### Goal 继续优化循环: 桌面 portable 打包
+
+- 尝试接入 `electron-builder`,但当前 pnpm 供应链校验输出会污染 builder 读取依赖树的 JSON 输出,因此未提交该依赖链。
+- 新增 `scripts/build_desktop_portable.ps1`,直接用 Electron runtime、`desktop/out/` 和最小 `package.json` 生成可运行 portable 目录与 zip。
+- `scripts/build_release.ps1` 现在除源码包外,也会生成 `kanojo-desktop-portable-<commit>.zip`。
+- `docs/SHOWCASE_PACKAGE.md` 增加 portable 包说明和运行前后端要求。
+- 自检:
+  - `.\scripts\build_desktop_portable.ps1 -SkipBuild`: passed,生成 portable zip
+  - `.\scripts\build_release.ps1`: passed,生成 source zip、portable zip 与 `desktop/out/`

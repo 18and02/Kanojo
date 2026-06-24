@@ -41,9 +41,11 @@ finally {
 $ShortHash = (git -C $Root rev-parse --short HEAD).Trim()
 $Archive = Join-Path $ReleaseDir "kanojo-source-$ShortHash.zip"
 git -C $Root archive --format zip --output $Archive HEAD
+$Portable = & (Join-Path $Root "scripts\build_desktop_portable.ps1") -OutDir $OutDir -SkipBuild
 
 [pscustomobject]@{
     source_archive = $Archive
+    portable_archive = $Portable.portable_archive
     commit = $ShortHash
     desktop_out = (Join-Path $Desktop "out")
 } | ConvertTo-Json -Depth 4
