@@ -404,12 +404,21 @@ type EvaluationSummary = {
   recent_events: EvaluationEvent[];
 };
 
+type InferencePrewarmResult = {
+  ok: boolean;
+  reply: string;
+  latency_ms: number;
+  llm_model: string;
+  llm_configured: boolean;
+};
+
 type KanojoApi = {
   chat: (text: string) => Promise<ChatResult>;
   heartbeat: (options?: HeartbeatOptions) => Promise<HeartbeatResult>;
   health: () => Promise<{ status: string; version: string }>;
   config: () => Promise<AppConfig>;
   nodeStatus: () => Promise<NodeStatus>;
+  prewarmInference: () => Promise<InferencePrewarmResult>;
   sttStatus: () => Promise<STTStatus>;
   ttsStatus: () => Promise<TTSStatus>;
   memoryCard: () => Promise<MemoryCard>;
@@ -478,6 +487,17 @@ const browserBackendApi: KanojoApi = {
     const response = await fetch(`${backendBaseUrl}/node/status`);
     if (!response.ok) {
       throw new Error(`Node status request failed: ${response.status}`);
+    }
+    return response.json();
+  },
+  prewarmInference: async () => {
+    const response = await fetch(`${backendBaseUrl}/node/inference/prewarm`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: "预热 PC 推理节点" })
+    });
+    if (!response.ok) {
+      throw new Error(`Inference prewarm request failed: ${response.status}`);
     }
     return response.json();
   },
@@ -630,6 +650,8 @@ export default function App() {
   const [evaluationStatus, setEvaluationStatus] = useState("未刷新");
   const [nodeStatus, setNodeStatus] = useState<NodeStatus | null>(null);
   const [nodeStatusText, setNodeStatusText] = useState("未刷新");
+  const [prewarmStatus, setPrewarmStatus] = useState("未预热");
+  const [prewarmBusy, setPrewarmBusy] = useState(false);
   const [avatarMouthLevel, setAvatarMouthLevel] = useState(0);
   const [avatarBlinking, setAvatarBlinking] = useState(false);
   const [lipSyncSource, setLipSyncSource] = useState<LipSyncSource>("none");
@@ -813,6 +835,21 @@ export default function App() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "node status failed";
       setNodeStatusText(message);
+    }
+  };
+
+  const prewarmInference = async () => {
+    setPrewarmBusy(true);
+    setPrewarmStatus("预热中");
+    try {
+      const result = await api.prewarmInference();
+      setPrewarmStatus(`${result.llm_model} · ${formatMs(result.latency_ms)}`);
+      await refreshNodeStatus();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "prewarm failed";
+      setPrewarmStatus(message);
+    } finally {
+      setPrewarmBusy(false);
     }
   };
 
@@ -2580,6 +2617,21 @@ export default function App() {
                   <strong title={nodeStatus?.inference_route_policy.note ?? "unknown"}>
                     {nodeStatus?.inference_route_policy.primary ?? "unknown"}
                   </strong>
+                </div>
+                <div className="setting-row">
+                  <span>预热</span>
+                  <strong title={prewarmStatus}>{prewarmStatus}</strong>
+                </div>
+                <div className="button-row">
+                  <button
+                    className="secondary-button accent"
+                    disabled={prewarmBusy}
+                    onClick={() => void prewarmInference()}
+                    type="button"
+                  >
+                    <Zap size={17} />
+                    <span>{prewarmBusy ? "预热中" : "预热推理"}</span>
+                  </button>
                 </div>
                 <p className="evaluation-status">{nodeStatusText}</p>
               </section>

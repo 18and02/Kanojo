@@ -14,5 +14,6 @@ out/
 *.sqlite3
 data/
 logs/
+exports*/
 recordings/
 models/

@@ -65,6 +65,17 @@ contextBridge.exposeInMainWorld("kanojoApi", {
     }
     return response.json();
   },
+  prewarmInference: async () => {
+    const response = await fetch(`${backendBaseUrl}/node/inference/prewarm`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: "预热 PC 推理节点" })
+    });
+    if (!response.ok) {
+      throw new Error(`Inference prewarm request failed: ${response.status}`);
+    }
+    return response.json();
+  },
   sttStatus: async () => {
     const response = await fetch(`${backendBaseUrl}/stt/status`);
     if (!response.ok) {

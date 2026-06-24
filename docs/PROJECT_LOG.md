@@ -189,3 +189,21 @@
   - `.\scripts\dual_node_demo.ps1`: passed=`true`
   - Mac `/chat`: route_selected=`peer`, llm_model=`qwen2.5:14b`, llm_configured=`true`
   - PC 预热后 Mac chat 客户端观测耗时约 961ms
+
+### Goal 循环 3/5: 评测数据与桌面端体验打磨
+
+- 桌面端调试面板新增“预热推理”操作,可直接调用本机 `/node/inference/prewarm`,并显示模型与耗时。
+- preload 与 browser fallback API 均接入 `prewarmInference`。
+- 新增 `scripts/export_evaluation_snapshot.ps1`,一键导出:
+  - `node-status.json`
+  - `evaluation-summary.json`
+  - `evaluation-events.json`
+  - `evaluation-events.csv`
+  - `memory-card.json`
+  - `memory-card.md`
+- 新增 `docs/EVALUATION_PLAN.md`,说明评测指标、导出命令和答辩取数建议。
+- 自检:
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 42 passed
+  - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed
+  - bundled `pnpm build`: passed
+  - `.\scripts\export_evaluation_snapshot.ps1 -OutDir exports-cycle3`: passed

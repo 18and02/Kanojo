@@ -64,6 +64,12 @@ cd "G:\Codex env\Kanojo"
 .\scripts\dual_node_demo.ps1
 ```
 
+导出评测数据和记忆名片:
+
+```powershell
+.\scripts\export_evaluation_snapshot.ps1
+```
+
 如果桌面端还显示旧状态,清理旧 Electron / Vite 进程后重启:
 
 ```powershell
