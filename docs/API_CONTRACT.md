@@ -141,6 +141,30 @@ P5.4 peer 推理落点。该接口只使用接收节点本地 LLM/mock 生成回
 }
 ```
 
+## `POST /node/inference/prewarm`
+
+PC 推理节点预热接口。用于后端启动后主动触发一次极短本地 LLM 调用,避免 Mac 第一次委托推理时遇到模型冷启动超时。
+
+请求:
+
+```json
+{
+  "text": "预热 PC 推理节点"
+}
+```
+
+响应:
+
+```json
+{
+  "ok": true,
+  "reply": "预热完成。",
+  "latency_ms": 1200,
+  "llm_model": "qwen2.5:14b",
+  "llm_configured": true
+}
+```
+
 ## `POST /node/memory-writes`
 
 P5.3b peer 写入落点。该接口只在接收节点本地 SQLite 落库,不会再次按写入策略转发,用于避免双节点递归和双写。
@@ -274,6 +298,61 @@ data: {"reply":"我记下来了。","latency_ms":1200,"first_delta_ms":320,"infe
 ```
 
 peer 未配置或不可用时返回 `503`,响应 `detail.reason` 解释拒绝原因。
+
+## `DELETE /memories/{memory_id}`
+
+软删除本地长期记忆。该接口不会物理删除 SQLite 行,只把 `memories.status` 改为 `inactive`,因此名片、检索和反思摘要不再使用该记忆。
+
+响应:
+
+```json
+{
+  "id": 2,
+  "deactivated": true,
+  "reason": "memory soft-deactivated",
+  "memory": {
+    "id": 2,
+    "status": "inactive"
+  }
+}
+```
+
+## `POST /maintenance/cleanup-test-memories`
+
+维护接口,用于清理联调/冒烟/链路验证过程中写入的测试记忆。默认 `dry_run=true`,只返回匹配项,不修改数据库。正式执行时设置 `dry_run=false`。
+
+请求:
+
+```json
+{
+  "dry_run": true,
+  "patterns": [
+    "联调测试",
+    "真实双机联调",
+    "双机联调",
+    "链路验证",
+    "PC 长期记忆写回 Mac mini"
+  ]
+}
+```
+
+响应:
+
+```json
+{
+  "dry_run": true,
+  "matched_count": 2,
+  "deactivated_count": 0,
+  "remaining_matches": 2,
+  "items": [
+    {
+      "id": 1,
+      "kind": "event",
+      "content": "联调测试：PC 长期记忆写回 Mac mini"
+    }
+  ]
+}
+```
 
 ## `POST /stt/transcribe`
 

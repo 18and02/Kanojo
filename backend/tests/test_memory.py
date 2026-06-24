@@ -706,6 +706,21 @@ def test_local_inference_endpoint_uses_local_llm(tmp_path, monkeypatch) -> None:
     assert payload["route"]["task_type"] == "chat_reply"
 
 
+def test_local_inference_prewarm_endpoint_uses_local_llm(tmp_path, monkeypatch) -> None:
+    from kanojo_agent import main
+
+    monkeypatch.setattr(main, "settings", make_settings(tmp_path))
+    client = TestClient(main.app)
+
+    response = client.post("/node/inference/prewarm", json={"text": "预热"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["llm_configured"] is False
+    assert payload["reply"] == "我先把这句话认真接住:预热"
+
+
 def test_chat_routes_inference_to_peer_when_auto_mac_home(tmp_path, monkeypatch) -> None:
     from kanojo_agent import main
 
@@ -811,6 +826,49 @@ def test_manual_memory_write_defaults_to_local(tmp_path, monkeypatch) -> None:
     assert payload["target"] == "local"
     assert payload["id"] == 1
     assert store.search_memories("普通话")[0]["content"] == "用户喜欢普通话音色"
+
+
+def test_delete_memory_soft_deactivates_local_memory(tmp_path, monkeypatch) -> None:
+    from kanojo_agent import main
+
+    store = MemoryStore(tmp_path / "delete-memory.db")
+    memory_id = store.add_memory("event", "联调测试：需要被删除")
+    monkeypatch.setattr(main, "store", store)
+    client = TestClient(main.app)
+
+    response = client.delete(f"/memories/{memory_id}")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["deactivated"] is True
+    assert store.memory_by_id(memory_id)["status"] == "inactive"
+    assert store.memory_card()["memory_count"] == 0
+
+
+def test_cleanup_test_memories_dry_run_and_apply(tmp_path, monkeypatch) -> None:
+    from kanojo_agent import main
+
+    store = MemoryStore(tmp_path / "cleanup-test-memories.db")
+    test_memory_id = store.add_memory("event", "联调测试：PC 长期记忆写回 Mac mini")
+    real_memory_id = store.add_memory("event", "用户周五有英语考试")
+    monkeypatch.setattr(main, "store", store)
+    client = TestClient(main.app)
+
+    dry_run = client.post("/maintenance/cleanup-test-memories", json={"dry_run": True})
+
+    assert dry_run.status_code == 200
+    assert dry_run.json()["matched_count"] == 1
+    assert dry_run.json()["items"][0]["id"] == test_memory_id
+    assert store.memory_card()["memory_count"] == 2
+
+    applied = client.post("/maintenance/cleanup-test-memories", json={"dry_run": False})
+
+    assert applied.status_code == 200
+    assert applied.json()["deactivated_count"] == 1
+    assert applied.json()["remaining_matches"] == 0
+    assert store.memory_by_id(test_memory_id)["status"] == "inactive"
+    assert store.memory_by_id(real_memory_id)["status"] == "active"
+    assert store.memory_card()["memory_count"] == 1
 
 
 def test_manual_memory_write_routes_to_peer_when_ready(tmp_path, monkeypatch) -> None:

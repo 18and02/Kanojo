@@ -37,6 +37,15 @@ llm = LLMClient(settings)
 tts = TTSClient(settings)
 stt = STTClient(settings)
 extractor = MemoryExtractor(settings, llm)
+DEFAULT_TEST_MEMORY_PATTERNS = (
+    "联调测试",
+    "真实双机联调",
+    "双机联调",
+    "链路验证",
+    "PC 长期记忆写回 Mac mini",
+    "PC 长期记忆写回 Mac",
+    "计划在2026年6月24日购买Mac mini作为PC",
+)
 
 app = FastAPI(title="Kanojo Agent Backend", version=__version__)
 app.add_middleware(
@@ -69,6 +78,16 @@ class RoutedMemoryWriteRequest(MemoryCreateRequest):
 class InferenceChatRequest(BaseModel):
     text: str = Field(min_length=1)
     memories: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class InferencePrewarmRequest(BaseModel):
+    text: str = "预热 PC 推理节点"
+
+
+class MemoryCleanupRequest(BaseModel):
+    patterns: list[str] = Field(default_factory=lambda: list(DEFAULT_TEST_MEMORY_PATTERNS))
+    dry_run: bool = True
+    limit: int = Field(default=100, ge=1, le=500)
 
 
 class MemoryCardSnapshotRequest(BaseModel):
@@ -156,6 +175,32 @@ async def local_inference_chat(request: InferenceChatRequest) -> dict[str, Any]:
             "llm_model": settings.llm_model,
             "llm_configured": llm.configured,
         },
+    }
+
+
+@app.post("/node/inference/prewarm")
+async def prewarm_local_inference(request: InferencePrewarmRequest) -> dict[str, Any]:
+    started = perf_counter()
+    if llm.configured:
+        reply = await llm.chat_completion(
+            [
+                {
+                    "role": "system",
+                    "content": "你是 Kanojo 的 PC 推理节点。请用一句极短中文确认预热完成。",
+                },
+                {"role": "user", "content": request.text},
+            ],
+            temperature=0.0,
+            max_tokens=32,
+        )
+    else:
+        reply = await llm.generate_reply(request.text, [])
+    return {
+        "ok": True,
+        "reply": reply,
+        "latency_ms": int((perf_counter() - started) * 1000),
+        "llm_model": settings.llm_model,
+        "llm_configured": llm.configured,
     }
 
 
@@ -341,6 +386,28 @@ async def create_memory(request: MemoryCreateRequest) -> dict[str, Any]:
     return result
 
 
+@app.delete("/memories/{memory_id}")
+def deactivate_memory(memory_id: int) -> dict[str, Any]:
+    memory = store.memory_by_id(memory_id)
+    if memory is None:
+        raise HTTPException(status_code=404, detail="memory not found")
+    if memory["status"] != "active":
+        return {
+            "id": memory_id,
+            "deactivated": False,
+            "reason": f"memory is already {memory['status']}",
+            "memory": memory,
+        }
+    deactivated = store.deactivate_memories([memory_id])
+    updated = store.memory_by_id(memory_id)
+    return {
+        "id": memory_id,
+        "deactivated": deactivated == 1,
+        "reason": "memory soft-deactivated",
+        "memory": updated,
+    }
+
+
 @app.post("/node/memory-writes")
 def create_local_memory_from_node(request: RoutedMemoryWriteRequest) -> dict[str, Any]:
     return write_memory_locally(
@@ -446,6 +513,26 @@ async def synthesize_tts(request: TTSRequest) -> dict[str, Any]:
 @app.get("/memories")
 def search_memories(query: str = "", limit: int = 5) -> dict[str, Any]:
     return {"items": store.search_memories(query, limit=limit)}
+
+
+@app.post("/maintenance/cleanup-test-memories")
+def cleanup_test_memories(request: MemoryCleanupRequest) -> dict[str, Any]:
+    patterns = [pattern.strip() for pattern in request.patterns if pattern.strip()]
+    if not patterns:
+        raise HTTPException(status_code=400, detail="patterns must not be empty")
+    matches = store.active_memories_matching_content(patterns, limit=request.limit)
+    deactivated_count = 0
+    if not request.dry_run and matches:
+        deactivated_count = store.deactivate_memories([int(item["id"]) for item in matches])
+        matches = store.active_memories_matching_content(patterns, limit=request.limit)
+    return {
+        "dry_run": request.dry_run,
+        "patterns": patterns,
+        "matched_count": len(matches) if request.dry_run else deactivated_count,
+        "deactivated_count": deactivated_count,
+        "remaining_matches": len(matches),
+        "items": matches,
+    }
 
 
 @app.get("/memory-card")

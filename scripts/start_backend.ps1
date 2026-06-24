@@ -1,6 +1,7 @@
 param(
     [int]$Port = 8787,
     [string]$BindAddress = "127.0.0.1",
+    [switch]$SkipPrewarm,
     [switch]$Restart
 )
 
@@ -56,6 +57,25 @@ try {
     Start-Sleep -Seconds 2
     Invoke-RestMethod -Uri "http://127.0.0.1:$Port/health" | Out-Null
     Write-Host "Backend started at http://$BindAddress`:$Port"
+    $ShouldPrewarm = -not $SkipPrewarm -and (
+        $env:KANOJO_PREWARM_ON_START -eq "true" -or
+        $env:KANOJO_NODE_ROLE -eq "pc_inference"
+    )
+    if ($ShouldPrewarm) {
+        try {
+            $Body = @{ text = "预热 PC 推理节点" } | ConvertTo-Json -Depth 4
+            $Prewarm = Invoke-RestMethod `
+                -Uri "http://127.0.0.1:$Port/node/inference/prewarm" `
+                -Method Post `
+                -ContentType "application/json; charset=utf-8" `
+                -Body $Body `
+                -TimeoutSec 240
+            Write-Host "Inference prewarmed with $($Prewarm.llm_model) in $($Prewarm.latency_ms)ms"
+        }
+        catch {
+            Write-Warning "Backend started, but inference prewarm failed: $($_.Exception.Message)"
+        }
+    }
 }
 finally {
     Pop-Location

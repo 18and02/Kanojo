@@ -159,3 +159,17 @@
   - PC 作为本地重推理节点
   - PC 长期记忆写回 Mac
   - Mac chat 自动委托 PC 推理
+
+### Goal 循环 1/5: 清理测试记忆与推理预热
+
+- 新增长期记忆软删除能力:
+  - `DELETE /memories/{memory_id}` 将本地记忆标记为 `inactive`,不物理删除 SQLite 行。
+  - `POST /maintenance/cleanup-test-memories` 默认 dry-run 匹配联调/冒烟/链路验证测试记忆,确认后可软删除。
+- 新增 PC 推理预热能力:
+  - `POST /node/inference/prewarm` 触发一次极短本地 LLM 调用。
+  - `scripts/prewarm_inference.ps1` 支持手动预热。
+  - `scripts/start_backend.ps1` 在 `KANOJO_NODE_ROLE=pc_inference` 时自动预热,避免 Mac 首次委托推理因模型冷启动回退。
+- 新增 `scripts/cleanup_test_memories.ps1`,可从 PC 调用 Mac 的维护接口先 dry-run 再 apply。
+- 自检:
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 42 passed
+  - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed

@@ -353,6 +353,40 @@ curl -X POST http://kanojo-pc.local:8787/node/inference/chat \
 
 预热后重新调用 Mac `/chat`,应稳定走 `selected=peer`。
 
+新版本也提供专用预热接口:
+
+```bash
+curl -X POST http://kanojo-pc.local:8787/node/inference/prewarm \
+  -H "Content-Type: application/json" \
+  -d '{"text":"预热 PC 推理节点"}'
+```
+
+PC 侧 `scripts/start_backend.ps1` 在 `KANOJO_NODE_ROLE=pc_inference` 时会自动调用该预热接口。也可以手动执行:
+
+```powershell
+.\scripts\prewarm_inference.ps1 -BaseUrl http://127.0.0.1:8787
+```
+
+### 9.4 清理联调测试记忆
+
+Mac mini 更新到包含维护接口的新版本后,先 dry-run 查看会清理哪些长期记忆:
+
+```bash
+curl -X POST http://127.0.0.1:8787/maintenance/cleanup-test-memories \
+  -H "Content-Type: application/json" \
+  -d '{"dry_run":true}'
+```
+
+确认只匹配联调/冒烟/链路验证产生的测试记忆后,再正式软删除:
+
+```bash
+curl -X POST http://127.0.0.1:8787/maintenance/cleanup-test-memories \
+  -H "Content-Type: application/json" \
+  -d '{"dry_run":false}'
+```
+
+该操作不会物理删除 SQLite 行,只把匹配记忆标记为 `inactive`,后续名片、检索和反思摘要不会再使用这些测试记忆。
+
 ## 10. 常见问题
 
 ### clone 私有仓库失败

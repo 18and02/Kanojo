@@ -168,6 +168,60 @@ class MemoryStore:
             ).fetchone()
         return dict(row) if row else None
 
+    def memory_by_id(self, memory_id: int) -> dict[str, Any] | None:
+        with self.connect() as conn:
+            row = conn.execute(
+                """
+                SELECT id, kind, content, source_message_id, importance, confidence,
+                       status, created_at, updated_at
+                FROM memories
+                WHERE id = ?
+                """,
+                (memory_id,),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def active_memories_matching_content(
+        self, patterns: list[str], limit: int = 100
+    ) -> list[dict[str, Any]]:
+        clean_patterns = [pattern.strip() for pattern in patterns if pattern.strip()]
+        if not clean_patterns:
+            return []
+        limit = max(1, min(limit, 500))
+        where_clause = " OR ".join("content LIKE ?" for _ in clean_patterns)
+        params: list[Any] = [f"%{pattern}%" for pattern in clean_patterns]
+        params.append(limit)
+        with self.connect() as conn:
+            rows = conn.execute(
+                f"""
+                SELECT id, kind, content, source_message_id, importance, confidence,
+                       status, created_at, updated_at
+                FROM memories
+                WHERE status = 'active' AND ({where_clause})
+                ORDER BY id ASC
+                LIMIT ?
+                """,
+                tuple(params),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def deactivate_memories(self, memory_ids: list[int]) -> int:
+        unique_ids = sorted({int(memory_id) for memory_id in memory_ids if int(memory_id) > 0})
+        if not unique_ids:
+            return 0
+        placeholders = ", ".join("?" for _ in unique_ids)
+        params: list[Any] = ["inactive", utc_now(), *unique_ids]
+        with self.connect() as conn:
+            cur = conn.execute(
+                f"""
+                UPDATE memories
+                SET status = ?, updated_at = ?
+                WHERE status = 'active' AND id IN ({placeholders})
+                """,
+                tuple(params),
+            )
+            return int(cur.rowcount)
+
     def add_memory_audit(
         self,
         *,
