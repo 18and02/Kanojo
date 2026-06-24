@@ -128,6 +128,22 @@ contextBridge.exposeInMainWorld("kanojoApi", {
     }
     return response.json();
   },
+  memoryAudits: async (limit = 20) => {
+    const response = await fetch(`${backendBaseUrl}/memory-audits?limit=${limit}`);
+    if (!response.ok) {
+      throw new Error(`Memory audits request failed: ${response.status}`);
+    }
+    return response.json();
+  },
+  approveMemoryAudit: async (auditId: number) => {
+    const response = await fetch(`${backendBaseUrl}/memory-audits/${auditId}/approve`, {
+      method: "POST"
+    });
+    if (!response.ok) {
+      throw new Error(`Memory audit approval failed: ${response.status}`);
+    }
+    return response.json();
+  },
   memoryCardSnapshots: async () => {
     const response = await fetch(`${backendBaseUrl}/memory-card/snapshots?session_id=default`);
     if (!response.ok) {

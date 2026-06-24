@@ -325,3 +325,14 @@
   - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 43 passed
   - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed
   - bundled `pnpm build`: passed
+
+### Goal 继续优化循环: 记忆人工确认队列
+
+- 存储层新增 `memory_audit_by_id` 与 `update_memory_audit_decision`。
+- 后端新增 `POST /memory-audits/{audit_id}/approve`,可把审计候选记忆人工批准写入长期记忆。
+- 桌面端记忆审计页新增最近审计列表,待确认候选可直接点击“批准写入”。
+- preload 与 browser fallback API 均接入 `memoryAudits` 与 `approveMemoryAudit`。
+- 自检:
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 44 passed
+  - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed
+  - bundled `pnpm build`: passed

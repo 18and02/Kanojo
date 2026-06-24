@@ -627,6 +627,51 @@ def recent_memory_audits(limit: int = 20) -> dict[str, Any]:
     return {"items": store.recent_memory_audits(limit=limit)}
 
 
+@app.post("/memory-audits/{audit_id}/approve")
+async def approve_memory_audit(audit_id: int) -> dict[str, Any]:
+    audit = store.memory_audit_by_id(audit_id)
+    if audit is None:
+        raise HTTPException(status_code=404, detail="memory audit not found")
+    if audit.get("memory_id"):
+        return {
+            "approved": False,
+            "reason": "audit already has memory_id",
+            "audit": audit,
+        }
+    candidate = audit.get("candidate")
+    if not isinstance(candidate, dict):
+        raise HTTPException(status_code=400, detail="audit has no memory candidate")
+    write_result = await write_memory_by_policy(
+        kind=str(candidate["kind"]),
+        content=str(candidate["content"]),
+        source_message_id=int(audit["source_message_id"]),
+        importance=float(candidate.get("importance", 0.5)),
+        confidence=float(candidate.get("confidence", 0.7)),
+        deduplicate=True,
+    )
+    if not write_result.get("accepted"):
+        updated = store.update_memory_audit_decision(
+            audit_id,
+            accepted=False,
+            reason=str(write_result.get("reason") or "manual approval write failed"),
+            memory_id=None,
+        )
+        raise HTTPException(status_code=503, detail={"write": write_result, "audit": updated})
+    memory_id = int(write_result["id"]) if write_result.get("id") is not None else None
+    updated = store.update_memory_audit_decision(
+        audit_id,
+        accepted=True,
+        reason="approved manually",
+        memory_id=memory_id,
+    )
+    return {
+        "approved": True,
+        "memory_id": memory_id,
+        "write": write_result,
+        "audit": updated,
+    }
+
+
 @app.get("/evaluation/summary")
 def evaluation_summary() -> dict[str, Any]:
     return store.evaluation_summary()

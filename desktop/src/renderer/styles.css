@@ -935,6 +935,16 @@ select {
   font-size: 12px;
 }
 
+.audit-history {
+  margin-top: 12px;
+}
+
+.audit-history h3 {
+  margin: 0 0 6px;
+  color: #354353;
+  font-size: 13px;
+}
+
 .audit-method strong {
   color: #92400e;
 }

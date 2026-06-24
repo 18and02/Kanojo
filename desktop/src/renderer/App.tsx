@@ -172,6 +172,25 @@ type MemoryDecision = {
   audit_id?: number;
 };
 
+type MemoryAuditItem = {
+  id: number;
+  source_message_id: number;
+  method: string;
+  raw_text: string;
+  candidate: MemoryDecision["candidate"] | null;
+  accepted: boolean;
+  reason: string;
+  memory_id?: number | null;
+  created_at: string;
+};
+
+type MemoryAuditApprovalResult = {
+  approved: boolean;
+  memory_id?: number | null;
+  reason?: string;
+  audit?: MemoryAuditItem;
+};
+
 type MemoryExtraction = {
   method: string;
   error?: string | null;
@@ -453,6 +472,8 @@ type KanojoApi = {
     patch: Partial<Pick<MemoryCardItem, "content" | "importance" | "confidence">>
   ) => Promise<MemoryUpdateResult>;
   deactivateMemory: (memoryId: number) => Promise<MemoryDeactivationResult>;
+  memoryAudits: (limit?: number) => Promise<{ items: MemoryAuditItem[] }>;
+  approveMemoryAudit: (auditId: number) => Promise<MemoryAuditApprovalResult>;
   memoryCardSnapshots: () => Promise<{ items: MemoryCardSnapshotSummary[] }>;
   createMemoryCardSnapshot: (label?: string) => Promise<MemoryCardSnapshot>;
   memoryCardSnapshotCompare: (snapshotId: number) => Promise<MemoryCardComparison>;
@@ -579,6 +600,22 @@ const browserBackendApi: KanojoApi = {
     }
     return response.json();
   },
+  memoryAudits: async (limit = 20) => {
+    const response = await fetch(`${backendBaseUrl}/memory-audits?limit=${limit}`);
+    if (!response.ok) {
+      throw new Error(`Memory audits request failed: ${response.status}`);
+    }
+    return response.json();
+  },
+  approveMemoryAudit: async (auditId: number) => {
+    const response = await fetch(`${backendBaseUrl}/memory-audits/${auditId}/approve`, {
+      method: "POST"
+    });
+    if (!response.ok) {
+      throw new Error(`Memory audit approval failed: ${response.status}`);
+    }
+    return response.json();
+  },
   memoryCardSnapshots: async () => {
     const response = await fetch(`${backendBaseUrl}/memory-card/snapshots?session_id=default`);
     if (!response.ok) {
@@ -691,6 +728,9 @@ export default function App() {
   const [deletingMemoryId, setDeletingMemoryId] = useState<number | null>(null);
   const [memoryReflection, setMemoryReflection] = useState<MemoryReflectionSummary | null>(null);
   const [memoryReflectionStatus, setMemoryReflectionStatus] = useState("未刷新");
+  const [memoryAudits, setMemoryAudits] = useState<MemoryAuditItem[]>([]);
+  const [memoryAuditStatus, setMemoryAuditStatus] = useState("未刷新");
+  const [approvingAuditId, setApprovingAuditId] = useState<number | null>(null);
   const [memoryCardSnapshots, setMemoryCardSnapshots] = useState<MemoryCardSnapshotSummary[]>([]);
   const [memoryCardComparison, setMemoryCardComparison] = useState<MemoryCardComparison | null>(
     null
@@ -917,6 +957,34 @@ export default function App() {
     }
   };
 
+  const refreshMemoryAudits = async () => {
+    try {
+      const result = await api.memoryAudits(20);
+      setMemoryAudits(result.items);
+      setMemoryAuditStatus(`已刷新 ${new Date().toLocaleTimeString()}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "memory audits failed";
+      setMemoryAuditStatus(message);
+    }
+  };
+
+  const approveMemoryAudit = async (audit: MemoryAuditItem) => {
+    setApprovingAuditId(audit.id);
+    setMemoryAuditStatus(`正在批准 #${audit.id}`);
+    try {
+      const result = await api.approveMemoryAudit(audit.id);
+      setMemoryAuditStatus(
+        result.approved ? `已批准 #${audit.id} -> 记忆 #${result.memory_id}` : `未批准 #${audit.id}`
+      );
+      await Promise.all([refreshMemoryAudits(), refreshMemoryCard(), refreshMemoryReflection()]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "approve memory audit failed";
+      setMemoryAuditStatus(message);
+    } finally {
+      setApprovingAuditId(null);
+    }
+  };
+
   const refreshEvaluation = async () => {
     try {
       const [summary, events] = await Promise.all([
@@ -1010,6 +1078,7 @@ export default function App() {
       void refreshMemoryCard();
       void refreshMemoryReflection();
       void refreshMemoryCardSnapshots();
+      void refreshMemoryAudits();
     } else if (activePanel === "debug") {
       void refreshEvaluation();
       void refreshNodeStatus();
@@ -2462,7 +2531,18 @@ export default function App() {
 
               {activeMemoryView === "audit" ? (
                 <section className="audit-panel memory-view-panel">
-                  <h2>记忆审计</h2>
+                  <div className="panel-title-row">
+                    <h2>记忆审计</h2>
+                    <button
+                      aria-label="刷新记忆审计"
+                      className="icon-button"
+                      onClick={() => void refreshMemoryAudits()}
+                      title="刷新记忆审计"
+                      type="button"
+                    >
+                      <RefreshCw size={15} />
+                    </button>
+                  </div>
                   {!extraction ? (
                     <p className="empty">本轮暂无审计。发送一句话后会显示抽取方法、候选记忆和接受/拒绝理由。</p>
                   ) : (
@@ -2487,6 +2567,34 @@ export default function App() {
                       )}
                     </>
                   )}
+                  <div className="audit-history">
+                    <h3>最近审计</h3>
+                    {memoryAudits.length === 0 ? (
+                      <p className="empty">暂无审计记录</p>
+                    ) : (
+                      memoryAudits.map((audit) => (
+                        <article className="audit-item" key={audit.id}>
+                          <span className={audit.accepted ? "accepted" : "rejected"}>
+                            {audit.accepted ? "accepted" : "pending"}
+                          </span>
+                          <strong>{audit.candidate?.kind ?? audit.method}</strong>
+                          <p>{audit.candidate?.content ?? audit.reason}</p>
+                          <small>{audit.reason}</small>
+                          {!audit.accepted && audit.candidate ? (
+                            <button
+                              className="text-button"
+                              disabled={approvingAuditId === audit.id}
+                              onClick={() => void approveMemoryAudit(audit)}
+                              type="button"
+                            >
+                              {approvingAuditId === audit.id ? "批准中" : "批准写入"}
+                            </button>
+                          ) : null}
+                        </article>
+                      ))
+                    )}
+                    <p className="evaluation-status">{memoryAuditStatus}</p>
+                  </div>
                 </section>
               ) : null}
 

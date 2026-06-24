@@ -291,6 +291,44 @@ class MemoryStore:
             )
             return int(cur.lastrowid)
 
+    def memory_audit_by_id(self, audit_id: int) -> dict[str, Any] | None:
+        with self.connect() as conn:
+            row = conn.execute(
+                """
+                SELECT id, source_message_id, method, raw_text, candidate_json,
+                       accepted, reason, memory_id, created_at
+                FROM memory_audits
+                WHERE id = ?
+                """,
+                (audit_id,),
+            ).fetchone()
+        if not row:
+            return None
+        item = dict(row)
+        item["accepted"] = bool(item["accepted"])
+        item["candidate"] = json.loads(item["candidate_json"]) if item.get("candidate_json") else None
+        del item["candidate_json"]
+        return item
+
+    def update_memory_audit_decision(
+        self,
+        audit_id: int,
+        *,
+        accepted: bool,
+        reason: str,
+        memory_id: int | None,
+    ) -> dict[str, Any] | None:
+        with self.connect() as conn:
+            conn.execute(
+                """
+                UPDATE memory_audits
+                SET accepted = ?, reason = ?, memory_id = ?
+                WHERE id = ?
+                """,
+                (1 if accepted else 0, reason, memory_id, audit_id),
+            )
+        return self.memory_audit_by_id(audit_id)
+
     def search_memories(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
         with self.connect() as conn:
             rows = conn.execute(

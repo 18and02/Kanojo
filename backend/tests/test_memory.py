@@ -873,6 +873,42 @@ def test_update_memory_edits_content_and_weight(tmp_path, monkeypatch) -> None:
     assert updated["status"] == "active"
 
 
+def test_approve_memory_audit_writes_candidate(tmp_path, monkeypatch) -> None:
+    from kanojo_agent import main
+
+    store = MemoryStore(tmp_path / "approve-audit.db")
+    message_id = store.add_message("default", "user", "我喜欢柔和女声")
+    audit_id = store.add_memory_audit(
+        source_message_id=message_id,
+        method="manual_test",
+        raw_text="我喜欢柔和女声",
+        candidate={
+            "kind": "preference",
+            "content": "用户喜欢柔和女声",
+            "importance": 0.7,
+            "confidence": 0.8,
+            "method": "manual_test",
+            "reason": "test candidate",
+        },
+        accepted=False,
+        reason="pending manual review",
+        memory_id=None,
+    )
+    monkeypatch.setattr(main, "store", store)
+    client = TestClient(main.app)
+
+    response = client.post(f"/memory-audits/{audit_id}/approve")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["approved"] is True
+    memory_id = payload["memory_id"]
+    assert store.memory_by_id(memory_id)["content"] == "用户喜欢柔和女声"
+    audit = store.memory_audit_by_id(audit_id)
+    assert audit["accepted"] is True
+    assert audit["memory_id"] == memory_id
+
+
 def test_cleanup_test_memories_dry_run_and_apply(tmp_path, monkeypatch) -> None:
     from kanojo_agent import main
 
