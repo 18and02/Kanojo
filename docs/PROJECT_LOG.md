@@ -393,3 +393,11 @@
   - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 48 passed
   - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed
   - bundled `pnpm build`: passed
+
+### Goal 继续优化循环: peer 配置写入后复查脚本
+
+- 新增 `scripts/apply_peer_config.ps1`,一条命令写入 `KANOJO_PEER_BASE_URL`、备份 `.env`、重启后端并复查 `/node/status`。
+- 该脚本与桌面端“写入配置”互补,用于命令行排障和双机现场复查。
+- `docs/DEMO_RUNBOOK.md` 与 `docs/FINAL_SELF_CHECK.md` 增加脚本说明。
+- 自检:
+  - PowerShell 语法检查: passed
