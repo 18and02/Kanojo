@@ -1132,8 +1132,21 @@ select {
 }
 
 .button-row {
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 10px;
+}
+
+.button-row .secondary-button {
+  flex: 1 1 118px;
+  width: auto;
+  min-width: 0;
+}
+
+.button-row .secondary-button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .conversation {

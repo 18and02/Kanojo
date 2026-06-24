@@ -366,6 +366,15 @@ type PeerScanSummary = {
   checked_at: string;
 };
 
+type PeerConfigApplyResult = {
+  applied: boolean;
+  key?: string;
+  value?: string;
+  env_file?: string;
+  backup_file?: string;
+  reason?: string;
+};
+
 type NodeAlert = {
   level: "ok" | "warning" | "muted";
   title: string;
@@ -535,6 +544,7 @@ type KanojoApi = {
   recordEvaluation: (event: EvaluationRecordRequest) => Promise<{ id: number }>;
   recordActivity: (event: ActivityEventRequest) => Promise<{ id: number }>;
   notify?: (title: string, body: string) => Promise<{ delivered: boolean; reason?: string }>;
+  applyPeerConfig: (peerBaseUrl: string) => Promise<PeerConfigApplyResult>;
 };
 
 declare global {
@@ -764,7 +774,12 @@ const browserBackendApi: KanojoApi = {
     }
     return response.json();
   },
-  notify: async (title: string, body: string) => notifyViaBrowser(title, body)
+  notify: async (title: string, body: string) => notifyViaBrowser(title, body),
+  applyPeerConfig: async (peerBaseUrl: string) => ({
+    applied: false,
+    reason: "desktop bridge unavailable",
+    value: peerBaseUrl
+  })
 };
 
 export default function App() {
@@ -835,6 +850,8 @@ export default function App() {
   const [peerScan, setPeerScan] = useState<PeerScanSummary | null>(null);
   const [peerScanStatus, setPeerScanStatus] = useState("未诊断");
   const [peerScanBusy, setPeerScanBusy] = useState(false);
+  const [peerConfigStatus, setPeerConfigStatus] = useState("未写入");
+  const [peerConfigBusy, setPeerConfigBusy] = useState(false);
   const [prewarmStatus, setPrewarmStatus] = useState("未预热");
   const [prewarmBusy, setPrewarmBusy] = useState(false);
   const [avatarMouthLevel, setAvatarMouthLevel] = useState(0);
@@ -1214,6 +1231,35 @@ export default function App() {
       setPeerScanStatus(message);
     } finally {
       setPeerScanBusy(false);
+    }
+  };
+
+  const applyRecommendedPeerConfig = async () => {
+    const peerBaseUrl = peerScan?.best?.base_url;
+    if (!peerBaseUrl) {
+      setPeerConfigStatus("没有可写入的推荐地址");
+      return;
+    }
+    const confirmed = window.confirm(
+      `将 KANOJO_PEER_BASE_URL 写入本机 backend/.env:\n${peerBaseUrl}\n\n写入后需要重启后端。`
+    );
+    if (!confirmed) {
+      return;
+    }
+    setPeerConfigBusy(true);
+    setPeerConfigStatus("写入中");
+    try {
+      const result = await api.applyPeerConfig(peerBaseUrl);
+      setPeerConfigStatus(
+        result.applied
+          ? `已写入 ${result.env_file ?? "backend/.env"}`
+          : `未写入: ${result.reason ?? "unknown"}`
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "apply peer config failed";
+      setPeerConfigStatus(message);
+    } finally {
+      setPeerConfigBusy(false);
     }
   };
 
@@ -3151,6 +3197,10 @@ export default function App() {
                   <strong title={peerScanStatus}>{peerScanStatus}</strong>
                 </div>
                 <div className="setting-row">
+                  <span>配置写入</span>
+                  <strong title={peerConfigStatus}>{peerConfigStatus}</strong>
+                </div>
+                <div className="setting-row">
                   <span>预热</span>
                   <strong title={prewarmStatus}>{prewarmStatus}</strong>
                 </div>
@@ -3163,6 +3213,15 @@ export default function App() {
                   >
                     <SearchCheck size={17} />
                     <span>{peerScanBusy ? "诊断中" : "一键诊断"}</span>
+                  </button>
+                  <button
+                    className="secondary-button"
+                    disabled={!peerScan?.best || peerConfigBusy}
+                    onClick={() => void applyRecommendedPeerConfig()}
+                    type="button"
+                  >
+                    <Save size={17} />
+                    <span>{peerConfigBusy ? "写入中" : "写入配置"}</span>
                   </button>
                   <button
                     className="secondary-button accent"

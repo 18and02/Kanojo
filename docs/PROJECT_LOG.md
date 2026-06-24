@@ -373,3 +373,12 @@
   - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 47 passed
   - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed
   - bundled `pnpm build`: passed
+
+### Goal 继续优化循环: 推荐 peer 受控写入
+
+- Electron 主进程新增 `kanojo:apply-peer-config`,仅在用户确认后写入本机 `backend/.env` 的 `KANOJO_PEER_BASE_URL`。
+- 写入前自动创建 `.env.bak-<timestamp>` 备份;找不到 `backend/.env` 时返回明确原因,不会静默创建。
+- 节点拓扑面板新增“写入配置”按钮,使用一键诊断得到的最佳 peer 地址。
+- `docs/DEMO_RUNBOOK.md` 与 `docs/FINAL_SELF_CHECK.md` 更新桌面诊断和受控写入说明。
+- 自检:
+  - bundled `pnpm build`: passed

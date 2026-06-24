@@ -1,4 +1,5 @@
 import { app, BrowserWindow, Notification, ipcMain, session } from "electron";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -21,6 +22,80 @@ ipcMain.handle(
     return { delivered: true };
   }
 );
+
+ipcMain.handle(
+  "kanojo:apply-peer-config",
+  (_event, payload: { peerBaseUrl?: string }) => {
+    const peerBaseUrl = payload.peerBaseUrl?.trim();
+    if (!peerBaseUrl) {
+      return { applied: false, reason: "peerBaseUrl is required" };
+    }
+    try {
+      const url = new URL(peerBaseUrl);
+      if (!["http:", "https:"].includes(url.protocol)) {
+        return { applied: false, reason: "peerBaseUrl must use http or https" };
+      }
+    } catch {
+      return { applied: false, reason: "peerBaseUrl is not a valid URL" };
+    }
+
+    const envFile = findBackendEnvFile();
+    if (!envFile) {
+      return {
+        applied: false,
+        reason: "backend/.env not found",
+        value: peerBaseUrl
+      };
+    }
+    const result = writeEnvValue(envFile, "KANOJO_PEER_BASE_URL", peerBaseUrl);
+    return {
+      applied: true,
+      key: "KANOJO_PEER_BASE_URL",
+      value: peerBaseUrl,
+      env_file: envFile,
+      backup_file: result.backupFile
+    };
+  }
+);
+
+function findBackendEnvFile() {
+  const candidates = [
+    process.env.KANOJO_BACKEND_ENV_FILE,
+    path.resolve(process.cwd(), "backend", ".env"),
+    path.resolve(process.cwd(), "..", "backend", ".env"),
+    path.resolve(app.getAppPath(), "..", "backend", ".env"),
+    path.resolve(app.getAppPath(), "..", "..", "backend", ".env"),
+    path.resolve(__dirname, "..", "..", "..", "backend", ".env")
+  ].filter((candidate): candidate is string => Boolean(candidate));
+  return candidates.find((candidate) => fs.existsSync(candidate)) ?? null;
+}
+
+function writeEnvValue(envFile: string, key: string, value: string) {
+  const content = fs.readFileSync(envFile, "utf8");
+  const eol = content.includes("\r\n") ? "\r\n" : "\n";
+  const backupFile = `${envFile}.bak-${timestampForFilename()}`;
+  fs.copyFileSync(envFile, backupFile);
+
+  const body = content.replace(/\r?\n$/, "");
+  const lines = body ? body.split(/\r?\n/) : [];
+  let replaced = false;
+  const nextLines = lines.map((line) => {
+    if (line.startsWith(`${key}=`)) {
+      replaced = true;
+      return `${key}=${value}`;
+    }
+    return line;
+  });
+  if (!replaced) {
+    nextLines.push(`${key}=${value}`);
+  }
+  fs.writeFileSync(envFile, `${nextLines.join(eol)}${eol}`, "utf8");
+  return { backupFile };
+}
+
+function timestampForFilename() {
+  return new Date().toISOString().replace(/[-:]/g, "").replace(/\..+$/, "Z");
+}
 
 const createWindow = () => {
   const window = new BrowserWindow({
