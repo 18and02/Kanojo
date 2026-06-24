@@ -409,3 +409,11 @@
 - 自检:
   - PowerShell 语法检查: passed
   - `.\scripts\export_evaluation_snapshot.ps1 -OutDir exports-scorecard-test`: passed,生成 `evaluation-report.md`
+
+### Goal 继续优化循环: 桌面端后端重启复查
+
+- Electron 主进程新增 `kanojo:restart-backend`,调用 `scripts/start_backend.ps1 -Restart` 并返回执行结果。
+- 节点拓扑面板新增“重启后端”按钮,用户确认后触发本机后端重启,随后刷新 `/node/status`。
+- `docs/DEMO_RUNBOOK.md` 与 `docs/FINAL_SELF_CHECK.md` 更新桌面配置闭环说明。
+- 自检:
+  - bundled `pnpm build`: passed

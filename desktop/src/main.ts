@@ -1,4 +1,5 @@
 import { app, BrowserWindow, Notification, ipcMain, session } from "electron";
+import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -58,16 +59,68 @@ ipcMain.handle(
   }
 );
 
+ipcMain.handle("kanojo:restart-backend", async () => {
+  const script = findProjectFile(path.join("scripts", "start_backend.ps1"));
+  if (!script) {
+    return { restarted: false, reason: "scripts/start_backend.ps1 not found" };
+  }
+  const result = await runPowerShellScript(script, [
+    "-Restart",
+    "-BindAddress",
+    "0.0.0.0",
+    "-Port",
+    "8787"
+  ]);
+  return {
+    restarted: result.exitCode === 0,
+    exit_code: result.exitCode,
+    stdout: result.stdout,
+    stderr: result.stderr,
+    reason: result.exitCode === 0 ? undefined : "backend restart failed"
+  };
+});
+
 function findBackendEnvFile() {
+  return findProjectFile(path.join("backend", ".env"), process.env.KANOJO_BACKEND_ENV_FILE);
+}
+
+function findProjectFile(relativePath: string, explicitPath?: string) {
   const candidates = [
-    process.env.KANOJO_BACKEND_ENV_FILE,
-    path.resolve(process.cwd(), "backend", ".env"),
-    path.resolve(process.cwd(), "..", "backend", ".env"),
-    path.resolve(app.getAppPath(), "..", "backend", ".env"),
-    path.resolve(app.getAppPath(), "..", "..", "backend", ".env"),
-    path.resolve(__dirname, "..", "..", "..", "backend", ".env")
+    explicitPath,
+    path.resolve(process.cwd(), relativePath),
+    path.resolve(process.cwd(), "..", relativePath),
+    path.resolve(app.getAppPath(), "..", relativePath),
+    path.resolve(app.getAppPath(), "..", "..", relativePath),
+    path.resolve(__dirname, "..", "..", "..", relativePath)
   ].filter((candidate): candidate is string => Boolean(candidate));
   return candidates.find((candidate) => fs.existsSync(candidate)) ?? null;
+}
+
+function runPowerShellScript(script: string, args: string[]) {
+  return new Promise<{ exitCode: number; stdout: string; stderr: string }>((resolve) => {
+    const child = spawn(
+      "powershell.exe",
+      ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script, ...args],
+      {
+        cwd: path.dirname(path.dirname(script)),
+        windowsHide: true
+      }
+    );
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", (error) => {
+      resolve({ exitCode: 1, stdout, stderr: error.message });
+    });
+    child.on("close", (code) => {
+      resolve({ exitCode: code ?? 1, stdout, stderr });
+    });
+  });
 }
 
 function writeEnvValue(envFile: string, key: string, value: string) {

@@ -391,6 +391,14 @@ type PeerConfigApplyResult = {
   reason?: string;
 };
 
+type BackendRestartResult = {
+  restarted: boolean;
+  exit_code?: number;
+  stdout?: string;
+  stderr?: string;
+  reason?: string;
+};
+
 type NodeAlert = {
   level: "ok" | "warning" | "muted";
   title: string;
@@ -561,6 +569,7 @@ type KanojoApi = {
   recordActivity: (event: ActivityEventRequest) => Promise<{ id: number }>;
   notify?: (title: string, body: string) => Promise<{ delivered: boolean; reason?: string }>;
   applyPeerConfig: (peerBaseUrl: string) => Promise<PeerConfigApplyResult>;
+  restartBackend: () => Promise<BackendRestartResult>;
 };
 
 declare global {
@@ -804,6 +813,10 @@ const browserBackendApi: KanojoApi = {
     applied: false,
     reason: "desktop bridge unavailable",
     value: peerBaseUrl
+  }),
+  restartBackend: async () => ({
+    restarted: false,
+    reason: "desktop bridge unavailable"
   })
 };
 
@@ -882,6 +895,8 @@ export default function App() {
   const [peerScanBusy, setPeerScanBusy] = useState(false);
   const [peerConfigStatus, setPeerConfigStatus] = useState("未写入");
   const [peerConfigBusy, setPeerConfigBusy] = useState(false);
+  const [backendRestartStatus, setBackendRestartStatus] = useState("未重启");
+  const [backendRestartBusy, setBackendRestartBusy] = useState(false);
   const [prewarmStatus, setPrewarmStatus] = useState("未预热");
   const [prewarmBusy, setPrewarmBusy] = useState(false);
   const [avatarMouthLevel, setAvatarMouthLevel] = useState(0);
@@ -1297,6 +1312,27 @@ export default function App() {
       setPeerConfigStatus(message);
     } finally {
       setPeerConfigBusy(false);
+    }
+  };
+
+  const restartBackend = async () => {
+    const confirmed = window.confirm("将重启本机 Kanojo 后端并重新检查节点状态。");
+    if (!confirmed) {
+      return;
+    }
+    setBackendRestartBusy(true);
+    setBackendRestartStatus("重启中");
+    try {
+      const result = await api.restartBackend();
+      setBackendRestartStatus(
+        result.restarted ? "已重启并通过 health" : `未重启: ${result.reason ?? "unknown"}`
+      );
+      await refreshNodeStatus();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "restart backend failed";
+      setBackendRestartStatus(message);
+    } finally {
+      setBackendRestartBusy(false);
     }
   };
 
@@ -3280,6 +3316,10 @@ export default function App() {
                   <strong title={peerConfigStatus}>{peerConfigStatus}</strong>
                 </div>
                 <div className="setting-row">
+                  <span>后端重启</span>
+                  <strong title={backendRestartStatus}>{backendRestartStatus}</strong>
+                </div>
+                <div className="setting-row">
                   <span>预热</span>
                   <strong title={prewarmStatus}>{prewarmStatus}</strong>
                 </div>
@@ -3301,6 +3341,15 @@ export default function App() {
                   >
                     <Save size={17} />
                     <span>{peerConfigBusy ? "写入中" : "写入配置"}</span>
+                  </button>
+                  <button
+                    className="secondary-button"
+                    disabled={backendRestartBusy}
+                    onClick={() => void restartBackend()}
+                    type="button"
+                  >
+                    <RefreshCw size={17} />
+                    <span>{backendRestartBusy ? "重启中" : "重启后端"}</span>
                   </button>
                   <button
                     className="secondary-button accent"

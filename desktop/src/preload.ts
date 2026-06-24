@@ -283,6 +283,9 @@ contextBridge.exposeInMainWorld("kanojoApi", {
   },
   applyPeerConfig: async (peerBaseUrl: string) => {
     return ipcRenderer.invoke("kanojo:apply-peer-config", { peerBaseUrl });
+  },
+  restartBackend: async () => {
+    return ipcRenderer.invoke("kanojo:restart-backend");
   }
 });
 

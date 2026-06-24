@@ -85,7 +85,7 @@ cd ~/Projects/Kanojo
 bash scripts/find_peer.sh --role pc_inference
 ```
 
-桌面端也可以在“节点拓扑”面板点击“一键诊断”,它会并发检查候选节点并显示最佳 peer。确认推荐地址无误后,点击“写入配置”可把 `KANOJO_PEER_BASE_URL` 写入本机 `backend/.env`,写入前会自动备份,之后需要重启后端。
+桌面端也可以在“节点拓扑”面板点击“一键诊断”,它会并发检查候选节点并显示最佳 peer。确认推荐地址无误后,点击“写入配置”可把 `KANOJO_PEER_BASE_URL` 写入本机 `backend/.env`,写入前会自动备份;随后点击“重启后端”完成重启和节点状态复查。
 
 也可以用脚本完成写入、重启和健康复查:
 
