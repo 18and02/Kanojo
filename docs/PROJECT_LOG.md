@@ -435,3 +435,5 @@
 - 自检:
   - PowerShell 语法检查: passed
   - `.\scripts\publish_github_release.ps1 -SkipBuild -DryRun`: passed
+  - `.\scripts\publish_github_release.ps1 -SkipBuild`: passed,GitHub draft release 创建成功
+  - `gh release view ... --json assets`: confirmed 3 uploaded assets
