@@ -144,3 +144,4 @@ GitHub draft release 清理预览:
 - Release 说明: `scripts/publish_github_release.ps1` 现在生成包含 checksum 校验、后端启动、portable 安装和展示素材包命令的 draft release notes。
 - 交付脚本安全: release、portable、展示包、截图、评测报告、讲稿和录屏脚本统一限制输出目录必须落在仓库内;`publish_github_release.ps1 -DryRun` 可在无 GitHub CLI 时本地预览 release notes。
 - 输出文件名安全:评测报告、演示讲稿和录屏兜底脚本的 `ReportName` / `OutFile` 只接受纯文件名,拒绝绝对路径和路径穿越片段。
+- 评测对比安全:`scripts/compare_evaluation_exports.ps1 -OutFile` 现在必须解析到仓库内已有目录下,默认输出要求 `AfterDir` 位于仓库内。

@@ -7,13 +7,47 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$Root = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
+
+function Test-RepoChildPath {
+    param([string]$Path)
+    $FullPath = [System.IO.Path]::GetFullPath($Path)
+    $RootPrefix = $Root
+    if (-not $RootPrefix.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $RootPrefix = "$RootPrefix$([System.IO.Path]::DirectorySeparatorChar)"
+    }
+    return $FullPath -ne $Root -and $FullPath.StartsWith($RootPrefix, [System.StringComparison]::OrdinalIgnoreCase)
+}
+
+function Resolve-RepoOutputFile {
+    param([string]$Path, [string]$Name)
+    if ([System.IO.Path]::IsPathRooted($Path)) {
+        $FullPath = [System.IO.Path]::GetFullPath($Path)
+    } else {
+        $FullPath = [System.IO.Path]::GetFullPath((Join-Path $Root $Path))
+    }
+    if (-not (Test-RepoChildPath $FullPath)) {
+        throw "$Name must resolve below the repository root: $Path"
+    }
+    $Leaf = [System.IO.Path]::GetFileName($FullPath)
+    if ([string]::IsNullOrWhiteSpace($Leaf) -or $Leaf -in @(".", "..")) {
+        throw "$Name must resolve to a file, not a directory: $Path"
+    }
+    if ($Leaf.IndexOfAny([System.IO.Path]::GetInvalidFileNameChars()) -ge 0) {
+        throw "$Name contains invalid file name characters: $Path"
+    }
+    $Parent = [System.IO.Path]::GetDirectoryName($FullPath)
+    if (-not $Parent -or -not (Test-Path -LiteralPath $Parent)) {
+        throw "$Name parent directory does not exist: $Parent"
+    }
+    return $FullPath
+}
 
 function Resolve-ExportDir {
     param([string]$Path)
     if ([System.IO.Path]::IsPathRooted($Path)) {
         return Resolve-Path -LiteralPath $Path
     }
-    $Root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
     return Resolve-Path -LiteralPath (Join-Path $Root $Path)
 }
 
@@ -84,10 +118,8 @@ $AfterNode = Read-NodeStatus $AfterPath
 
 if (-not $OutFile) {
     $OutFile = Join-Path $AfterPath "evaluation-comparison.md"
-} elseif (-not [System.IO.Path]::IsPathRooted($OutFile)) {
-    $Root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
-    $OutFile = Join-Path $Root $OutFile
 }
+$OutFile = Resolve-RepoOutputFile -Path $OutFile -Name "OutFile"
 
 $Lines = [System.Collections.Generic.List[string]]::new()
 $Lines.Add("# Kanojo Evaluation Comparison")

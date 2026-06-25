@@ -66,6 +66,8 @@ Scorecard 的 `TODO` 不是脚本失败,而是提示当前导出样本还缺少�
 evaluation-comparison.md
 ```
 
+`-OutFile` 可显式指定仓库内输出路径;脚本会拒绝仓库外绝对路径、`..\` 逃逸路径和不存在的父目录。未传 `-OutFile` 时默认写入 `AfterDir\evaluation-comparison.md`,因此 `AfterDir` 也需要位于仓库内。
+
 如果要导出 Mac mini 的记忆源:
 
 ```powershell

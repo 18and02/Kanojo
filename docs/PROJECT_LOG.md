@@ -564,3 +564,20 @@
   - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed。
   - bundled `pnpm build` in `desktop/`: passed。
   - `git diff --check`: passed,仅提示工作区文件下次 Git 触碰时会转换为 CRLF。
+
+### Goal 继续优化循环: 评测对比输出边界
+
+- `scripts/compare_evaluation_exports.ps1 -OutFile` 增加仓库内输出边界检查,拒绝仓库外绝对路径、`..\` 逃逸路径、目录路径和不存在的父目录。
+- 未传 `-OutFile` 时仍默认写入 `AfterDir\evaluation-comparison.md`,但会先确认该默认输出仍落在仓库内。
+- `docs/EVALUATION_PLAN.md` 与 `docs/FINAL_SELF_CHECK.md` 补充评测对比输出约束说明。
+- 自检:
+  - `scripts\compare_evaluation_exports.ps1` 语法检查: passed。
+  - `.\scripts\compare_evaluation_exports.ps1 -BeforeDir exports-compare-boundary-before -AfterDir exports-compare-boundary-after`: passed,生成 `evaluation-comparison.md`。
+  - `.\scripts\compare_evaluation_exports.ps1 ... -OutFile '..\leak.md'`: correctly rejected。
+  - `.\scripts\compare_evaluation_exports.ps1 ... -OutFile $env:TEMP\kanojo-compare-leak.md`: correctly rejected。
+  - `.\scripts\compare_evaluation_exports.ps1 ... -OutFile 'exports-compare-boundary-after\missing\report.md'`: correctly rejected。
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 48 passed。
+  - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed。
+  - bundled `pnpm build` in `desktop/`: passed。
+  - 全量 PowerShell 语法检查: passed。
+  - `git diff --check`: passed,仅提示工作区文件下次 Git 触碰时会转换为 CRLF。
