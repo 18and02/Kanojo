@@ -46,6 +46,32 @@ function Test-GitHubReleaseExists {
     }
 }
 
+function Get-GitHubReleaseAssetNames {
+    param(
+        [string]$ReleaseTag,
+        [string]$Repo
+    )
+    $StdOut = [System.IO.Path]::GetTempFileName()
+    $StdErr = [System.IO.Path]::GetTempFileName()
+    try {
+        $Process = Start-Process `
+            -FilePath $GhCommand.Source `
+            -ArgumentList @("release", "view", $ReleaseTag, "--repo", $Repo, "--json", "assets", "--jq", ".assets[].name") `
+            -NoNewWindow `
+            -PassThru `
+            -RedirectStandardOutput $StdOut `
+            -RedirectStandardError $StdErr `
+            -Wait
+        if ($Process.ExitCode -ne 0) {
+            $ErrorText = Get-Content -Raw -LiteralPath $StdErr -ErrorAction SilentlyContinue
+            throw "Failed to read release assets: $ErrorText"
+        }
+        return @(Get-Content -LiteralPath $StdOut -ErrorAction SilentlyContinue)
+    } finally {
+        Remove-Item -LiteralPath $StdOut, $StdErr -Force -ErrorAction SilentlyContinue
+    }
+}
+
 if (-not $Repository) {
     $Repository = Resolve-Repository
 }
@@ -148,6 +174,23 @@ if ($ReleaseExists) {
         $CreateArgs += "--prerelease"
     }
     & gh @CreateArgs
+}
+
+$ExpectedAssetNames = @($Artifacts | ForEach-Object { [System.IO.Path]::GetFileName($_) })
+$UploadedAssetNames = @(Get-GitHubReleaseAssetNames -ReleaseTag $Tag -Repo $Repository)
+$MissingAssetNames = @($ExpectedAssetNames | Where-Object { $_ -notin $UploadedAssetNames })
+if ($MissingAssetNames.Count -gt 0) {
+    $MissingArtifacts = @(
+        $Artifacts | Where-Object {
+            [System.IO.Path]::GetFileName($_) -in $MissingAssetNames
+        }
+    )
+    & gh release upload $Tag @MissingArtifacts --repo $Repository --clobber
+    $UploadedAssetNames = @(Get-GitHubReleaseAssetNames -ReleaseTag $Tag -Repo $Repository)
+    $MissingAssetNames = @($ExpectedAssetNames | Where-Object { $_ -notin $UploadedAssetNames })
+    if ($MissingAssetNames.Count -gt 0) {
+        throw "Release upload incomplete. Missing assets: $($MissingAssetNames -join ', ')"
+    }
 }
 
 [pscustomobject]@{
