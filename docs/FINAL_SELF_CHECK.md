@@ -54,6 +54,12 @@ release 打包:
 .\scripts\build_release.ps1
 ```
 
+演示截图采集:
+
+```powershell
+.\scripts\capture_showcase_screenshots.ps1 -OutDir exports-showcase
+```
+
 ## 2026-06-24 最终验证结果
 
 - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 42 passed
@@ -86,8 +92,8 @@ release 打包:
 
 1. 引入 NSIS/MSI installer 打包器。
 2. 替换最终 Live2D / 视觉资产。
-3. 增加最终演示素材的截图/录屏自动采集。
-4. 将 GitHub draft release 发布接入一键 release 脚本的可选步骤。
+3. 录屏自动采集或演示脚本旁白素材。
+4. GitHub draft release 的历史草稿清理策略。
 
 ## 2026-06-24 继续优化循环
 
@@ -106,3 +112,9 @@ release 打包:
 - 评测报告: `evaluation-report.md` 新增 Coverage Scorecard,自动提示双机、记忆、主动心跳和形象评测证据缺口。
 - 交付校验: `build_release.ps1` 生成 `SHA256SUMS-<commit>.txt`,用于校验源码包和 portable 包完整性。
 - GitHub Release:新增 `scripts/publish_github_release.ps1`,可创建或更新 draft release 并上传交付包。
+
+## 2026-06-25 继续优化循环
+
+- 演示素材:新增 `scripts/capture_showcase_screenshots.ps1` 与 `scripts/capture_showcase_screenshots.cjs`,自动启动桌面预览并采集控制、记忆名片、记忆审计和节点调试截图。
+- 采集实现:使用本机 Edge/Chrome DevTools Protocol,不依赖 Playwright 浏览器包;截图后会清理临时浏览器用户目录和后台子进程。
+- 展示包装: `docs/SHOWCASE_PACKAGE.md` 增加截图采集命令、输出文件和 `-EnsureBackend` 用法。

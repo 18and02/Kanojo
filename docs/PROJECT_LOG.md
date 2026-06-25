@@ -437,3 +437,22 @@
   - `.\scripts\publish_github_release.ps1 -SkipBuild -DryRun`: passed
   - `.\scripts\publish_github_release.ps1 -SkipBuild`: passed,GitHub draft release 创建成功
   - `gh release view ... --json assets`: confirmed 3 uploaded assets
+
+## 2026-06-25
+
+### Goal 继续优化循环: 最终演示截图采集
+
+- 新增 `scripts/capture_showcase_screenshots.ps1`,用于临时启动桌面端 Vite 预览服务并执行截图采集。
+- 新增 `scripts/capture_showcase_screenshots.cjs`,通过本机 Edge/Chrome DevTools Protocol 打开页面、切换关键页签并保存 PNG。
+- 默认采集:
+  - `01-control.png`
+  - `02-memory-card.png`
+  - `03-memory-audit.png`
+  - `04-debug-node.png`
+  - `showcase-screenshots.json`
+- 点击目标文本找不到时会直接失败,避免静默生成错误截图。
+- `docs/SHOWCASE_PACKAGE.md` 与 `docs/FINAL_SELF_CHECK.md` 增加截图采集命令。
+- 自检:
+  - PowerShell 语法检查: passed
+  - Node 脚本语法检查: passed
+  - `.\scripts\capture_showcase_screenshots.ps1 -OutDir exports-showcase-test-random`: passed,生成 4 张 PNG 与 manifest

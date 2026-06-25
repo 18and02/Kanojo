@@ -68,6 +68,30 @@ cd "G:\Codex env\Kanojo"
 .\scripts\start_desktop.ps1 -EnsureBackend -Restart
 ```
 
+## 演示截图采集
+
+生成答辩展示截图:
+
+```powershell
+.\scripts\capture_showcase_screenshots.ps1 -OutDir exports-showcase
+```
+
+该脚本会临时启动 Vite 预览服务,调用本机 Edge/Chrome 的 DevTools Protocol,自动切换关键页签并输出 PNG 截图和 manifest。默认输出:
+
+```text
+exports-showcase/01-control.png
+exports-showcase/02-memory-card.png
+exports-showcase/03-memory-audit.png
+exports-showcase/04-debug-node.png
+exports-showcase/showcase-screenshots.json
+```
+
+如需在截图前确认本机后端已启动:
+
+```powershell
+.\scripts\capture_showcase_screenshots.ps1 -EnsureBackend -OutDir exports-showcase
+```
+
 ## PC 后端登录自启
 
 PC 可以把后端注册到当前用户的 Startup 文件夹。该方式不需要管理员权限,登录后会启动 `start_backend.ps1`,默认监听 `0.0.0.0:8787`,并沿用启动预热逻辑:
