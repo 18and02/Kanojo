@@ -10,6 +10,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
+    $PSNativeCommandUseErrorActionPreference = $false
+}
 $Root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
 $ReleaseDir = Join-Path $Root $OutDir
 
