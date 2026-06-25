@@ -6,6 +6,7 @@ param(
     [switch]$SkipEvaluation,
     [switch]$SkipScreenshots,
     [switch]$SkipTalkTrack,
+    [switch]$SkipRecording,
     [switch]$IncludeReleaseArtifacts
 )
 
@@ -140,6 +141,12 @@ if (-not $SkipTalkTrack) {
     $TalkTrackFile = $TalkTrack.FullName
 }
 
+$Recording = $null
+if (-not $SkipRecording -and -not $SkipScreenshots) {
+    $RecordingJson = & (Join-Path $Root "scripts\build_showcase_recording.ps1") -PackageDir $OutDir
+    $Recording = $RecordingJson | ConvertFrom-Json
+}
+
 $Manifest = [pscustomobject]@{
     generated_at = $GeneratedAt
     commit = $ShortHash
@@ -165,6 +172,17 @@ $Manifest = [pscustomobject]@{
     } else {
         $null
     }
+    recording = if ($Recording) {
+        [pscustomobject]@{
+            plan = ConvertTo-RepoRelativePath $Recording.plan
+            video_created = [bool]$Recording.video_created
+            video = if ($Recording.video) { ConvertTo-RepoRelativePath $Recording.video } else { $null }
+            ffmpeg_available = [bool]$Recording.ffmpeg_available
+            screenshot_count = $Recording.screenshot_count
+        }
+    } else {
+        $null
+    }
     release = @{
         copied = [bool]$IncludeReleaseArtifacts
         artifacts = $ReleaseEntries
@@ -186,6 +204,7 @@ $IndexLines = @(
     "",
     "- Manifest: ``showcase-package.json``",
     "- Demo talk track: ``demo-talk-track.md``",
+    "- Recording plan: ``recording-plan.md``",
     "- Evaluation report: ``evaluation/evaluation-report.md``",
     "- Screenshot manifest: ``screenshots/showcase-screenshots.json``",
     "",
@@ -232,5 +251,6 @@ Set-Content -LiteralPath $IndexPath -Encoding UTF8 -Value $IndexLines
     evaluation_files = $EvaluationFiles.Count
     screenshot_files = $ScreenshotFiles.Count
     talk_track = $TalkTrackFile
+    recording_video = if ($Recording) { $Recording.video } else { $null }
     release_artifacts = ($ReleaseEntries | Where-Object { $_.exists }).Count
 } | ConvertTo-Json -Depth 5

@@ -106,12 +106,20 @@ exports-showcase/showcase-screenshots.json
 exports-showcase-package/SHOWCASE_INDEX.md
 exports-showcase-package/showcase-package.json
 exports-showcase-package/demo-talk-track.md
+exports-showcase-package/recording-plan.md
+exports-showcase-package/showcase-slideshow.mp4
 exports-showcase-package/screenshots/
 exports-showcase-package/evaluation/
 exports-showcase-package/docs/
 ```
 
-`SHOWCASE_INDEX.md` 是答辩前的材料入口,包含截图清单、评测报告路径、讲稿入口、关键文档副本和当前 commit 的 release SHA256。`demo-talk-track.md` 会根据当前导出的节点状态、评测摘要和截图 manifest 生成三分钟演示节奏、旁白要点和常见追问短答。
+`SHOWCASE_INDEX.md` 是答辩前的材料入口,包含截图清单、评测报告路径、讲稿入口、录屏计划、关键文档副本和当前 commit 的 release SHA256。`demo-talk-track.md` 会根据当前导出的节点状态、评测摘要和截图 manifest 生成三分钟演示节奏、旁白要点和常见追问短答。
+
+如果本机安装了 `ffmpeg`,素材包会自动把关键截图合成为 `showcase-slideshow.mp4`,作为无法现场录屏时的短视频兜底。无 `ffmpeg` 时仍会生成 `recording-plan.md`,说明帧序列和下一步录屏方式。也可以单独运行:
+
+```powershell
+.\scripts\build_showcase_recording.ps1 -PackageDir exports-showcase-package
+```
 
 默认不复制 release zip,只引用 `release/` 下的已有交付包;如确实需要把 zip 一并放进素材包:
 

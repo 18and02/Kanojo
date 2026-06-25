@@ -104,7 +104,7 @@ GitHub draft release 清理预览:
 
 1. 引入 NSIS/MSI installer 打包器。
 2. 替换最终 Live2D / 视觉资产。
-3. 录屏自动采集,需先确定录屏工具链或接受依赖 ffmpeg/OBS。
+3. 完整现场录屏自动化,需确定是否采用 OBS/Windows capture;当前已支持 ffmpeg 截图合成兜底视频。
 4. 旧 GitHub draft release 的实际删除执行,需人工确认后运行 `-Apply`。
 
 ## 2026-06-24 继续优化循环
@@ -133,3 +133,4 @@ GitHub draft release 清理预览:
 - 素材整合:新增 `scripts/build_showcase_package.ps1`,把截图、评测报告、关键文档副本和 release SHA256 汇总到 `exports-showcase-package/`。
 - Release 治理:新增 `scripts/prune_github_draft_releases.ps1`,默认 dry-run 预览旧 GitHub draft release,显式 `-Apply` 后才会删除。
 - 演示讲稿:新增 `scripts/write_demo_talk_track.ps1`,素材包默认生成 `demo-talk-track.md`,用于答辩三分钟节奏、旁白要点和追问短答。
+- 录屏兜底:新增 `scripts/build_showcase_recording.ps1`,有 `ffmpeg` 时将截图合成为 `showcase-slideshow.mp4`,否则生成 `recording-plan.md`。

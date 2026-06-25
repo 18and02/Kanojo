@@ -489,3 +489,15 @@
 - 自检:
   - PowerShell 语法检查: passed
   - `.\scripts\build_showcase_package.ps1 -OutDir exports-showcase-talk-track-zh-test`: passed,生成中文 `demo-talk-track.md`,并进入索引和 manifest。
+
+### Goal 继续优化循环: 录屏兜底视频
+
+- 新增 `scripts/build_showcase_recording.ps1`,读取素材包截图序列并生成 `recording-plan.md`。
+- 如果本机存在 `ffmpeg`,脚本会把 `01-control.png`、`02-memory-card.png`、`03-memory-audit.png`、`04-debug-node.png` 合成为 `showcase-slideshow.mp4`。
+- `scripts/build_showcase_package.ps1` 默认在截图和讲稿后调用录屏兜底脚本,并把结果写入 `showcase-package.json` 与 `SHOWCASE_INDEX.md`。
+- 该能力不替代真实现场录屏;真实录屏仍建议使用 OBS 或 Windows capture,但答辩材料包已有可复核的视频兜底。
+- 自检:
+  - PowerShell 语法检查: passed
+  - `.\scripts\build_showcase_recording.ps1 -PackageDir exports-showcase-talk-track-zh-test`: passed,生成 `showcase-slideshow.mp4`。
+  - `ffmpeg -v error -i ...\showcase-slideshow.mp4 -f null -`: passed。
+  - `.\scripts\build_showcase_package.ps1 -OutDir exports-showcase-recording-test`: passed,manifest 中 `recording.video_created=true`。
