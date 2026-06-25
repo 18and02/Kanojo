@@ -104,8 +104,8 @@ GitHub draft release 清理预览:
 
 1. 引入 NSIS/MSI installer 打包器。
 2. 替换最终 Live2D / 视觉资产。
-3. 录屏自动采集或演示脚本旁白素材。
-4. GitHub draft release 的历史草稿清理策略。
+3. 录屏自动采集,需先确定录屏工具链或接受依赖 ffmpeg/OBS。
+4. 旧 GitHub draft release 的实际删除执行,需人工确认后运行 `-Apply`。
 
 ## 2026-06-24 继续优化循环
 
@@ -132,3 +132,4 @@ GitHub draft release 清理预览:
 - 展示包装: `docs/SHOWCASE_PACKAGE.md` 增加截图采集命令、输出文件和 `-EnsureBackend` 用法。
 - 素材整合:新增 `scripts/build_showcase_package.ps1`,把截图、评测报告、关键文档副本和 release SHA256 汇总到 `exports-showcase-package/`。
 - Release 治理:新增 `scripts/prune_github_draft_releases.ps1`,默认 dry-run 预览旧 GitHub draft release,显式 `-Apply` 后才会删除。
+- 演示讲稿:新增 `scripts/write_demo_talk_track.ps1`,素材包默认生成 `demo-talk-track.md`,用于答辩三分钟节奏、旁白要点和追问短答。

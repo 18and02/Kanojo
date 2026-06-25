@@ -478,3 +478,13 @@
 - 自检:
   - PowerShell 语法检查: passed
   - `.\scripts\prune_github_draft_releases.ps1 -Keep 2`: passed,当前匹配 5 个 draft,建议保留 2 个、清理 3 个;未执行删除。
+
+### Goal 继续优化循环: 演示讲稿素材
+
+- 新增 `scripts/write_demo_talk_track.ps1`,读取素材包中的节点状态、评测摘要、记忆名片和截图 manifest,生成 `demo-talk-track.md`。
+- `scripts/build_showcase_package.ps1` 默认调用讲稿生成脚本,并把讲稿写入 `showcase-package.json` 与 `SHOWCASE_INDEX.md`。
+- 讲稿内容包含演示前检查、当前证据摘要、三分钟演示节奏、分段旁白、截图索引和常见追问短答。
+- `docs/SHOWCASE_PACKAGE.md` 与 `docs/FINAL_SELF_CHECK.md` 增加讲稿入口和后续优先级调整。
+- 自检:
+  - PowerShell 语法检查: passed
+  - `.\scripts\build_showcase_package.ps1 -OutDir exports-showcase-talk-track-test`: passed,生成 `demo-talk-track.md`,并进入索引和 manifest。

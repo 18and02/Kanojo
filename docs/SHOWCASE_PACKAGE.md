@@ -105,15 +105,24 @@ exports-showcase/showcase-screenshots.json
 ```text
 exports-showcase-package/SHOWCASE_INDEX.md
 exports-showcase-package/showcase-package.json
+exports-showcase-package/demo-talk-track.md
 exports-showcase-package/screenshots/
 exports-showcase-package/evaluation/
 exports-showcase-package/docs/
 ```
 
-`SHOWCASE_INDEX.md` 是答辩前的材料入口,包含截图清单、评测报告路径、关键文档副本和当前 commit 的 release SHA256。默认不复制 release zip,只引用 `release/` 下的已有交付包;如确实需要把 zip 一并放进素材包:
+`SHOWCASE_INDEX.md` 是答辩前的材料入口,包含截图清单、评测报告路径、讲稿入口、关键文档副本和当前 commit 的 release SHA256。`demo-talk-track.md` 会根据当前导出的节点状态、评测摘要和截图 manifest 生成三分钟演示节奏、旁白要点和常见追问短答。
+
+默认不复制 release zip,只引用 `release/` 下的已有交付包;如确实需要把 zip 一并放进素材包:
 
 ```powershell
 .\scripts\build_showcase_package.ps1 -OutDir exports-showcase-package -IncludeReleaseArtifacts
+```
+
+如只想在已有素材包内重新生成讲稿:
+
+```powershell
+.\scripts\write_demo_talk_track.ps1 -PackageDir exports-showcase-package
 ```
 
 ## PC 后端登录自启

@@ -94,6 +94,8 @@ cd "G:\Codex env\Kanojo"
 .\scripts\build_showcase_package.ps1 -OutDir exports-showcase-package
 ```
 
+素材包会包含 `SHOWCASE_INDEX.md`、`demo-talk-track.md`、评测报告、关键截图和 release 校验信息。
+
 如果桌面端还显示旧状态,清理旧 Electron / Vite 进程后重启:
 
 ```powershell

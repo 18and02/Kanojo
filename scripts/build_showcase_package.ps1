@@ -5,6 +5,7 @@ param(
     [switch]$EnsureBackend,
     [switch]$SkipEvaluation,
     [switch]$SkipScreenshots,
+    [switch]$SkipTalkTrack,
     [switch]$IncludeReleaseArtifacts
 )
 
@@ -133,6 +134,12 @@ if ($IncludeReleaseArtifacts) {
     }
 }
 
+$TalkTrackFile = $null
+if (-not $SkipTalkTrack) {
+    $TalkTrack = & (Join-Path $Root "scripts\write_demo_talk_track.ps1") -PackageDir $OutDir
+    $TalkTrackFile = $TalkTrack.FullName
+}
+
 $Manifest = [pscustomobject]@{
     generated_at = $GeneratedAt
     commit = $ShortHash
@@ -149,6 +156,15 @@ $Manifest = [pscustomobject]@{
         files = $ScreenshotFiles
     }
     docs = $DocFiles
+    talk_track = if ($TalkTrackFile) {
+        [pscustomobject]@{
+            name = [System.IO.Path]::GetFileName($TalkTrackFile)
+            path = ConvertTo-RepoRelativePath $TalkTrackFile
+            bytes = (Get-Item -LiteralPath $TalkTrackFile).Length
+        }
+    } else {
+        $null
+    }
     release = @{
         copied = [bool]$IncludeReleaseArtifacts
         artifacts = $ReleaseEntries
@@ -169,6 +185,7 @@ $IndexLines = @(
     "## Core Files",
     "",
     "- Manifest: ``showcase-package.json``",
+    "- Demo talk track: ``demo-talk-track.md``",
     "- Evaluation report: ``evaluation/evaluation-report.md``",
     "- Screenshot manifest: ``screenshots/showcase-screenshots.json``",
     "",
@@ -214,5 +231,6 @@ Set-Content -LiteralPath $IndexPath -Encoding UTF8 -Value $IndexLines
     dirty = $Dirty
     evaluation_files = $EvaluationFiles.Count
     screenshot_files = $ScreenshotFiles.Count
+    talk_track = $TalkTrackFile
     release_artifacts = ($ReleaseEntries | Where-Object { $_.exists }).Count
 } | ConvertTo-Json -Depth 5
