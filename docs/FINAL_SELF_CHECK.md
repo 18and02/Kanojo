@@ -145,3 +145,4 @@ GitHub draft release 清理预览:
 - 交付脚本安全: release、portable、展示包、截图、评测报告、讲稿和录屏脚本统一限制输出目录必须落在仓库内;`publish_github_release.ps1 -DryRun` 可在无 GitHub CLI 时本地预览 release notes。
 - 输出文件名安全:评测报告、演示讲稿和录屏兜底脚本的 `ReportName` / `OutFile` 只接受纯文件名,拒绝绝对路径和路径穿越片段。
 - 评测对比安全:`scripts/compare_evaluation_exports.ps1 -OutFile` 现在必须解析到仓库内已有目录下,默认输出要求 `AfterDir` 位于仓库内。
+- Portable 卸载安全:`scripts/uninstall_windows_desktop_portable.ps1` 默认只删除当前用户 LocalAppData 下的 Kanojo Desktop 根目录;自定义根目录必须显式 `-AllowCustomRoot`,且只能位于仓库或当前用户 LocalAppData Kanojo 目录下。

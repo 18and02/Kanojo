@@ -196,6 +196,8 @@ desktop/out/
 .\scripts\uninstall_windows_desktop_portable.ps1
 ```
 
+卸载脚本默认只删除当前用户 `%LOCALAPPDATA%\Kanojo\Desktop`。如果显式传入 `-InstallRoot`,必须同时传 `-AllowCustomRoot`,且目标只能位于仓库目录或当前用户 `%LOCALAPPDATA%\Kanojo` 下,避免递归删除误伤普通目录。
+
 也可以只生成桌面 portable 包:
 
 ```powershell

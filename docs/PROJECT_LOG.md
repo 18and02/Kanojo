@@ -581,3 +581,19 @@
   - bundled `pnpm build` in `desktop/`: passed。
   - 全量 PowerShell 语法检查: passed。
   - `git diff --check`: passed,仅提示工作区文件下次 Git 触碰时会转换为 CRLF。
+
+### Goal 继续优化循环: portable 卸载递归删除边界
+
+- `scripts/uninstall_windows_desktop_portable.ps1` 默认卸载路径收紧为当前用户 `%LOCALAPPDATA%\Kanojo\Desktop` 的精确路径。
+- 显式传入 `-InstallRoot` 时必须同时传入 `-AllowCustomRoot`;允许的自定义根目录只限仓库内测试目录或当前用户 `%LOCALAPPDATA%\Kanojo` 下的目录。
+- `docs/SHOWCASE_PACKAGE.md` 与 `docs/FINAL_SELF_CHECK.md` 补充 portable 卸载安全边界说明。
+- 自检:
+  - `scripts\uninstall_windows_desktop_portable.ps1` 语法检查: passed。
+  - `.\scripts\uninstall_windows_desktop_portable.ps1 -InstallRoot exports-portable-uninstall-boundary-test -KeepShortcuts`: correctly rejected。
+  - `.\scripts\uninstall_windows_desktop_portable.ps1 -InstallRoot exports-portable-uninstall-boundary-test -AllowCustomRoot -KeepShortcuts`: passed,仓库内测试目录已删除。
+  - `.\scripts\uninstall_windows_desktop_portable.ps1 -InstallRoot $env:TEMP\kanojo-portable-uninstall-outside-test -AllowCustomRoot -KeepShortcuts`: correctly rejected。
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 48 passed。
+  - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed。
+  - bundled `pnpm build` in `desktop/`: passed。
+  - 全量 PowerShell 语法检查: passed。
+  - `git diff --check`: passed,仅提示工作区文件下次 Git 触碰时会转换为 CRLF。
