@@ -87,7 +87,7 @@ release 打包:
 1. 引入 NSIS/MSI installer 打包器。
 2. 替换最终 Live2D / 视觉资产。
 3. 增加最终演示素材的截图/录屏自动采集。
-4. 增加 release 包上传到 GitHub Release 的自动化流程。
+4. 将 GitHub draft release 发布接入一键 release 脚本的可选步骤。
 
 ## 2026-06-24 继续优化循环
 
@@ -105,3 +105,4 @@ release 打包:
 - 审计历史:后端和桌面端支持按 accepted/pending/rejected 筛选、关键词搜索和加载更多分页。
 - 评测报告: `evaluation-report.md` 新增 Coverage Scorecard,自动提示双机、记忆、主动心跳和形象评测证据缺口。
 - 交付校验: `build_release.ps1` 生成 `SHA256SUMS-<commit>.txt`,用于校验源码包和 portable 包完整性。
+- GitHub Release:新增 `scripts/publish_github_release.ps1`,可创建或更新 draft release 并上传交付包。

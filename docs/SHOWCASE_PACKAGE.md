@@ -125,6 +125,18 @@ desktop/out/
 Get-FileHash .\release\kanojo-desktop-portable-<commit>.zip -Algorithm SHA256
 ```
 
+生成 release 包后,可以创建或更新 GitHub draft release:
+
+```powershell
+.\scripts\publish_github_release.ps1 -SkipBuild
+```
+
+默认会创建 draft release,标签为 `kanojo-<commit>`,并上传源码包、portable 包和 SHA256 清单。先预览不上传:
+
+```powershell
+.\scripts\publish_github_release.ps1 -SkipBuild -DryRun
+```
+
 ## 评测报告
 
 导出评测数据时会同步生成 Markdown 摘要:

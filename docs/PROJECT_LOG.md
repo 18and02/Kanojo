@@ -425,3 +425,13 @@
 - 自检:
   - PowerShell 语法检查: passed
   - `.\scripts\build_release.ps1`: passed,生成 `SHA256SUMS-fbbe3ba.txt`
+
+### Goal 继续优化循环: GitHub draft release 自动化
+
+- 新增 `scripts/publish_github_release.ps1`,可根据当前 commit 创建或更新 GitHub draft release。
+- 脚本会上传源码 zip、桌面 portable zip 和 `SHA256SUMS-<commit>.txt`,并生成 release notes。
+- 默认 draft,支持 `-DryRun` 预览和 `-Public` 正式发布。
+- `docs/SHOWCASE_PACKAGE.md` 与 `docs/FINAL_SELF_CHECK.md` 增加使用说明。
+- 自检:
+  - PowerShell 语法检查: passed
+  - `.\scripts\publish_github_release.ps1 -SkipBuild -DryRun`: passed
