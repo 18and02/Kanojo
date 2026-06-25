@@ -147,3 +147,4 @@ GitHub draft release 清理预览:
 - 评测对比安全:`scripts/compare_evaluation_exports.ps1 -OutFile` 现在必须解析到仓库内已有目录下,默认输出要求 `AfterDir` 位于仓库内。
 - Portable 卸载安全:`scripts/uninstall_windows_desktop_portable.ps1` 默认只删除当前用户 LocalAppData 下的 Kanojo Desktop 根目录;自定义根目录必须显式 `-AllowCustomRoot`,且只能位于仓库或当前用户 LocalAppData Kanojo 目录下。
 - 后端重启安全:`scripts/start_backend.ps1 -Restart` 只会停止命令行可识别为 `uvicorn kanojo_agent.main:app` 的 Kanojo 后端进程;端口被其他服务占用时会拒绝停止。
+- 语音服务重启安全:`scripts/start_stt.ps1 -Restart` 与 `scripts/start_tts.ps1 -Restart` 只会停止命令行可识别为对应 Kanojo STT/TTS uvicorn app 的进程。

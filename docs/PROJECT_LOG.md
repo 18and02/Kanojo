@@ -582,6 +582,22 @@
   - 全量 PowerShell 语法检查: passed。
   - `git diff --check`: passed,仅提示工作区文件下次 Git 触碰时会转换为 CRLF。
 
+### Goal 继续优化循环: 语音服务重启进程识别
+
+- `scripts/start_stt.ps1 -Restart` 不再无条件停止占用 STT 端口的进程,只会停止命令行包含 `uvicorn` 与 `kanojo_agent.stt_server:app` 的进程。
+- `scripts/start_tts.ps1 -Restart` 同样只会停止命令行包含 `uvicorn` 与 `kanojo_agent.tts_server:app` 的进程。
+- 端口被其他本地服务占用时,脚本会报错并保留该进程。
+- `docs/FINAL_SELF_CHECK.md` 补充 STT/TTS 重启安全说明。
+- 自检:
+  - `scripts\start_stt.ps1` 与 `scripts\start_tts.ps1` 语法检查: passed。
+  - 临时 `python -m http.server` 占用随机端口后执行 `.\scripts\start_stt.ps1 -Port <port> -Restart`: correctly rejected,临时进程未被停止。
+  - 临时 `python -m http.server` 占用随机端口后执行 `.\scripts\start_tts.ps1 -Port <port> -Restart`: correctly rejected,临时进程未被停止。
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 48 passed。
+  - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed。
+  - bundled `pnpm build` in `desktop/`: passed。
+  - 全量 PowerShell 语法检查: passed。
+  - `git diff --check`: passed,仅提示工作区文件下次 Git 触碰时会转换为 CRLF。
+
 ### Goal 继续优化循环: 后端重启进程识别
 
 - `scripts/start_backend.ps1 -Restart` 不再无条件停止占用目标端口的进程。

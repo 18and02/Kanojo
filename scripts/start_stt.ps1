@@ -27,11 +27,37 @@ if ($InstallDeps) {
     & $Python -m pip install -e "$Backend[stt]"
 }
 
+function Get-ProcessCommandLine {
+    param([int]$ProcessId)
+    try {
+        $Process = Get-CimInstance Win32_Process -Filter "ProcessId = $ProcessId" -ErrorAction Stop
+        return [string]$Process.CommandLine
+    } catch {
+        return ""
+    }
+}
+
+function Test-KanojoSttProcess {
+    param([int]$ProcessId)
+    $CommandLine = (Get-ProcessCommandLine -ProcessId $ProcessId).ToLowerInvariant()
+    return $CommandLine.Contains("uvicorn") -and $CommandLine.Contains("kanojo_agent.stt_server:app")
+}
+
 $Existing = Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue |
     Where-Object { $_.State -eq "Listen" -and $_.OwningProcess -gt 0 }
 if ($Existing) {
     if ($Restart) {
-        $Existing | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object {
+        $ProcessIds = @($Existing | Select-Object -ExpandProperty OwningProcess -Unique)
+        $UnsafeProcessIds = @($ProcessIds | Where-Object { -not (Test-KanojoSttProcess -ProcessId $_) })
+        if ($UnsafeProcessIds.Count -gt 0) {
+            $Details = @(
+                $UnsafeProcessIds | ForEach-Object {
+                    "pid=$_ command=$(Get-ProcessCommandLine -ProcessId $_)"
+                }
+            ) -join "; "
+            throw "Port $Port is occupied by a non-Kanojo STT process. Refusing to stop it: $Details"
+        }
+        $ProcessIds | ForEach-Object {
             Stop-Process -Id $_ -Force
         }
         Start-Sleep -Seconds 1
