@@ -88,6 +88,12 @@ cd "G:\Codex env\Kanojo"
 .\scripts\build_release.ps1
 ```
 
+生成答辩演示素材包:
+
+```powershell
+.\scripts\build_showcase_package.ps1 -OutDir exports-showcase-package
+```
+
 如果桌面端还显示旧状态,清理旧 Electron / Vite 进程后重启:
 
 ```powershell

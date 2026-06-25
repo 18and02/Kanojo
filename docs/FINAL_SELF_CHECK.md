@@ -60,6 +60,12 @@ release 打包:
 .\scripts\capture_showcase_screenshots.ps1 -OutDir exports-showcase
 ```
 
+演示素材包:
+
+```powershell
+.\scripts\build_showcase_package.ps1 -OutDir exports-showcase-package
+```
+
 ## 2026-06-24 最终验证结果
 
 - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 42 passed
@@ -118,3 +124,4 @@ release 打包:
 - 演示素材:新增 `scripts/capture_showcase_screenshots.ps1` 与 `scripts/capture_showcase_screenshots.cjs`,自动启动桌面预览并采集控制、记忆名片、记忆审计和节点调试截图。
 - 采集实现:使用本机 Edge/Chrome DevTools Protocol,不依赖 Playwright 浏览器包;截图后会清理临时浏览器用户目录和后台子进程。
 - 展示包装: `docs/SHOWCASE_PACKAGE.md` 增加截图采集命令、输出文件和 `-EnsureBackend` 用法。
+- 素材整合:新增 `scripts/build_showcase_package.ps1`,把截图、评测报告、关键文档副本和 release SHA256 汇总到 `exports-showcase-package/`。

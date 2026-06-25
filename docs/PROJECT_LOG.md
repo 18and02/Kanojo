@@ -456,3 +456,15 @@
   - PowerShell 语法检查: passed
   - Node 脚本语法检查: passed
   - `.\scripts\capture_showcase_screenshots.ps1 -OutDir exports-showcase-test-random`: passed,生成 4 张 PNG 与 manifest
+
+### Goal 继续优化循环: 展示素材包整合
+
+- 新增 `scripts/build_showcase_package.ps1`,把评测导出、关键截图、文档副本和当前 commit 的 release 校验信息整合到单个 `exports-showcase-package/` 目录。
+- 默认生成 `SHOWCASE_INDEX.md` 与 `showcase-package.json`,作为答辩前查看材料和核对交付资产的入口。
+- 默认只引用 `release/` 下的 release zip 和 SHA256 清单,避免重复复制大文件;需要完整离线素材包时可加 `-IncludeReleaseArtifacts`。
+- 文档更新:
+  - `docs/SHOWCASE_PACKAGE.md` 增加素材包命令和输出结构。
+  - `docs/FINAL_SELF_CHECK.md` 增加素材包自检命令。
+- 自检:
+  - PowerShell 语法检查: passed
+  - `.\scripts\build_showcase_package.ps1 -OutDir exports-showcase-package-test`: passed,生成索引、评测报告、截图、文档副本和 release 哈希索引。

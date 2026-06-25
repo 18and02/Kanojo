@@ -92,6 +92,30 @@ exports-showcase/showcase-screenshots.json
 .\scripts\capture_showcase_screenshots.ps1 -EnsureBackend -OutDir exports-showcase
 ```
 
+## 演示素材包
+
+把截图、评测报告、关键说明文档和当前 release 校验信息汇总到一个目录:
+
+```powershell
+.\scripts\build_showcase_package.ps1 -OutDir exports-showcase-package
+```
+
+默认输出:
+
+```text
+exports-showcase-package/SHOWCASE_INDEX.md
+exports-showcase-package/showcase-package.json
+exports-showcase-package/screenshots/
+exports-showcase-package/evaluation/
+exports-showcase-package/docs/
+```
+
+`SHOWCASE_INDEX.md` 是答辩前的材料入口,包含截图清单、评测报告路径、关键文档副本和当前 commit 的 release SHA256。默认不复制 release zip,只引用 `release/` 下的已有交付包;如确实需要把 zip 一并放进素材包:
+
+```powershell
+.\scripts\build_showcase_package.ps1 -OutDir exports-showcase-package -IncludeReleaseArtifacts
+```
+
 ## PC 后端登录自启
 
 PC 可以把后端注册到当前用户的 Startup 文件夹。该方式不需要管理员权限,登录后会启动 `start_backend.ps1`,默认监听 `0.0.0.0:8787`,并沿用启动预热逻辑:
