@@ -13,11 +13,23 @@ param(
 $ErrorActionPreference = "Stop"
 $Root = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
 
-if ([System.IO.Path]::IsPathRooted($OutDir)) {
-    throw "OutDir must be relative to the repository root."
+function Resolve-RepoRelativeOutputPath {
+    param([string]$Path, [string]$Name)
+    if ([System.IO.Path]::IsPathRooted($Path)) {
+        throw "$Name must be relative to the repository root."
+    }
+    $FullPath = [System.IO.Path]::GetFullPath((Join-Path $Root $Path))
+    $RootPrefix = $Root
+    if (-not $RootPrefix.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $RootPrefix = "$RootPrefix$([System.IO.Path]::DirectorySeparatorChar)"
+    }
+    if ($FullPath -eq $Root -or -not $FullPath.StartsWith($RootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "$Name must resolve below the repository root: $Path"
+    }
+    return $FullPath
 }
 
-$Target = Join-Path $Root $OutDir
+$Target = Resolve-RepoRelativeOutputPath -Path $OutDir -Name "OutDir"
 $DocsTarget = Join-Path $Target "docs"
 $ReleaseTarget = Join-Path $Target "release"
 New-Item -ItemType Directory -Force -Path $Target, $DocsTarget | Out-Null

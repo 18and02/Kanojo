@@ -512,3 +512,55 @@
   - PowerShell 语法检查: passed
   - `.\scripts\install_windows_desktop_portable.ps1 -Archive release\kanojo-desktop-portable-b42ecac.zip -InstallRoot exports-portable-install-test -NoShortcuts`: passed,验证安装目录内存在 `Kanojo.exe`。
   - `.\scripts\uninstall_windows_desktop_portable.ps1 -InstallRoot exports-portable-install-test -AllowCustomRoot`: passed,测试安装目录已清理。
+
+### Goal 继续优化循环: GitHub release notes 交付说明
+
+- `scripts/publish_github_release.ps1` 的 draft release notes 从三步手动解压说明升级为完整交付入口。
+- 新 release notes 会包含源码包、portable 包、SHA256 清单、后端启动命令、portable 当前用户安装命令和展示素材包命令。
+- `docs/SHOWCASE_PACKAGE.md` 与 `docs/FINAL_SELF_CHECK.md` 增加 release notes 说明,避免 GitHub 发布页与本地交付文档脱节。
+- 自检:
+  - PowerShell 语法检查: passed。
+  - `.\scripts\publish_github_release.ps1 -SkipBuild -DryRun`: passed,生成包含校验、安装和展示素材包命令的 `release-notes-f3feeda.md`。
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 48 passed。
+  - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed。
+  - `pnpm build` in `desktop/`: passed。
+  - `git diff --check`: passed,仅提示工作区文件下次 Git 触碰时会转换为 CRLF。
+
+### Goal 继续优化循环: 交付脚本路径边界与本地预览
+
+- `scripts/build_release.ps1`、`scripts/build_desktop_portable.ps1`、`scripts/build_showcase_package.ps1`、`scripts/capture_showcase_screenshots.ps1`、`scripts/export_evaluation_snapshot.ps1`、`scripts/write_evaluation_report.ps1`、`scripts/write_demo_talk_track.ps1` 和 `scripts/build_showcase_recording.ps1` 统一增加输出目录边界检查。
+- release / portable / showcase 类 `OutDir` 必须是仓库根目录下的相对路径;报告、讲稿和录屏脚本会先确认目标目录解析后仍在仓库内。
+- `scripts/publish_github_release.ps1 -SkipBuild -DryRun` 不再要求本机安装或登录 GitHub CLI,可只用本地 release 文件生成并预览 release notes。
+- `docs/SHOWCASE_PACKAGE.md` 与 `docs/FINAL_SELF_CHECK.md` 增加输出目录约束和 dry-run 说明。
+- 自检:
+  - PowerShell 语法检查: passed。
+  - `.\scripts\build_release.ps1 -OutDir '..\kanojo-outside-test' -SkipTests`: correctly rejected。
+  - `.\scripts\build_desktop_portable.ps1 -OutDir '..\kanojo-outside-test' -SkipBuild`: correctly rejected。
+  - `.\scripts\publish_github_release.ps1 -OutDir '..\kanojo-outside-test' -SkipBuild -DryRun`: correctly rejected。
+  - `.\scripts\build_showcase_package.ps1 -OutDir '..\kanojo-outside-test' -SkipEvaluation -SkipScreenshots -SkipTalkTrack -SkipRecording`: correctly rejected。
+  - `.\scripts\export_evaluation_snapshot.ps1 -OutDir '..\kanojo-outside-test'`: correctly rejected。
+  - `.\scripts\capture_showcase_screenshots.ps1 -OutDir '..\kanojo-outside-test'`: correctly rejected。
+  - `.\scripts\write_evaluation_report.ps1 -OutDir '..\kanojo-outside-test'`: correctly rejected。
+  - `.\scripts\write_demo_talk_track.ps1 -PackageDir '..\kanojo-outside-test'`: correctly rejected。
+  - `.\scripts\build_showcase_recording.ps1 -PackageDir '..\kanojo-outside-test'`: correctly rejected。
+  - `.\scripts\publish_github_release.ps1 -SkipBuild -DryRun`: passed,无 GitHub 上传动作。
+  - `.\scripts\build_showcase_package.ps1 -OutDir exports-showcase-path-boundary-test -SkipEvaluation -SkipScreenshots -SkipRecording`: passed。
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 48 passed。
+  - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed。
+  - bundled `pnpm build` in `desktop/`: passed。
+  - `git diff --check`: passed,仅提示工作区文件下次 Git 触碰时会转换为 CRLF。
+
+### Goal 继续优化循环: 输出文件名边界
+
+- `scripts/write_evaluation_report.ps1 -ReportName` 增加纯文件名校验,拒绝空值、绝对路径、路径分隔符和 `.` / `..`。
+- `scripts/write_demo_talk_track.ps1 -OutFile` 与 `scripts/build_showcase_recording.ps1 -OutFile` 使用同样校验,避免展示包目录已受控但单个输出文件名仍可路径穿越。
+- `docs/SHOWCASE_PACKAGE.md` 与 `docs/FINAL_SELF_CHECK.md` 补充输出文件名约束说明。
+- 自检:
+  - PowerShell 语法检查: passed。
+  - `.\scripts\write_evaluation_report.ps1 -OutDir exports-file-name-boundary-test -ReportName '..\leak.md'`: correctly rejected。
+  - `.\scripts\write_demo_talk_track.ps1 -PackageDir exports-file-name-boundary-test -OutFile '..\leak.md'`: correctly rejected。
+  - `.\scripts\build_showcase_recording.ps1 -PackageDir exports-file-name-boundary-test -OutFile '..\leak.mp4'`: correctly rejected。
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 48 passed。
+  - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed。
+  - bundled `pnpm build` in `desktop/`: passed。
+  - `git diff --check`: passed,仅提示工作区文件下次 Git 触碰时会转换为 CRLF。

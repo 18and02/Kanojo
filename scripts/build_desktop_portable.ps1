@@ -5,11 +5,28 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$Root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
+$Root = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
+
+function Resolve-RepoRelativeOutputPath {
+    param([string]$Path, [string]$Name)
+    if ([System.IO.Path]::IsPathRooted($Path)) {
+        throw "$Name must be relative to the repository root."
+    }
+    $FullPath = [System.IO.Path]::GetFullPath((Join-Path $Root $Path))
+    $RootPrefix = $Root
+    if (-not $RootPrefix.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $RootPrefix = "$RootPrefix$([System.IO.Path]::DirectorySeparatorChar)"
+    }
+    if ($FullPath -eq $Root -or -not $FullPath.StartsWith($RootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "$Name must resolve below the repository root: $Path"
+    }
+    return $FullPath
+}
+
 $Desktop = Join-Path $Root "desktop"
 $ElectronDist = Join-Path $Desktop "node_modules\electron\dist"
 $DesktopOut = Join-Path $Desktop "out"
-$ReleaseDir = Join-Path $Root $OutDir
+$ReleaseDir = Resolve-RepoRelativeOutputPath -Path $OutDir -Name "OutDir"
 $BundledPnpm = Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\bin\pnpm.cmd"
 
 if (-not (Test-Path -LiteralPath $ElectronDist)) {

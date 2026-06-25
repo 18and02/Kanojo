@@ -100,6 +100,8 @@ exports-showcase/showcase-screenshots.json
 .\scripts\build_showcase_package.ps1 -OutDir exports-showcase-package
 ```
 
+`-OutDir` 必须是仓库根目录下的相对路径;脚本会拒绝绝对路径、仓库根目录本身和 `..\` 逃逸路径,避免把展示材料或 release 产物写到工作区外。
+
 默认输出:
 
 ```text
@@ -172,6 +174,10 @@ release/SHA256SUMS-<commit>.txt
 desktop/out/
 ```
 
+`build_release.ps1`、`build_desktop_portable.ps1` 和 `publish_github_release.ps1` 的 `-OutDir` 也使用相同的仓库内相对路径边界检查。
+
+`write_evaluation_report.ps1 -ReportName`、`write_demo_talk_track.ps1 -OutFile` 和 `build_showcase_recording.ps1 -OutFile` 只接受纯文件名,会拒绝绝对路径和包含 `\`、`/`、`..` 的路径片段,避免单个输出文件逃逸展示包或评测目录。
+
 `kanojo-desktop-portable-<commit>.zip` 内包含 Electron runtime 和已构建桌面端,解压后运行 `Kanojo.exe`。它仍需要本机后端已经启动,推荐先执行:
 
 ```powershell
@@ -215,6 +221,16 @@ Get-FileHash .\release\kanojo-desktop-portable-<commit>.zip -Algorithm SHA256
 ```powershell
 .\scripts\publish_github_release.ps1 -SkipBuild -DryRun
 ```
+
+`-DryRun` 只要求本地 release 文件存在,会生成 `release-notes-<commit>.md` 并输出将要发布的 JSON,不需要 GitHub CLI 或登录状态。实际创建/更新 GitHub release 时仍需要 `gh` 与 `gh auth login`。
+
+发布脚本会同步生成 `release/release-notes-<commit>.md`,GitHub draft release 的说明会直接包含:
+
+- `SHA256SUMS-<commit>.txt` 校验方式。
+- `scripts\start_backend.ps1` 后端启动命令。
+- `scripts\install_windows_desktop_portable.ps1` 当前用户安装命令。
+- `scripts\build_showcase_package.ps1 -OutDir exports-showcase-package` 展示素材包命令。
+- `SHOWCASE_INDEX.md`、`demo-talk-track.md`、`recording-plan.md` 和 `showcase-slideshow.mp4` 的查看入口。
 
 查看 GitHub draft release 清理建议:
 

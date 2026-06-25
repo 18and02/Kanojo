@@ -13,8 +13,25 @@ $ErrorActionPreference = "Stop"
 if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
     $PSNativeCommandUseErrorActionPreference = $false
 }
-$Root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
-$ReleaseDir = Join-Path $Root $OutDir
+$Root = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
+
+function Resolve-RepoRelativeOutputPath {
+    param([string]$Path, [string]$Name)
+    if ([System.IO.Path]::IsPathRooted($Path)) {
+        throw "$Name must be relative to the repository root."
+    }
+    $FullPath = [System.IO.Path]::GetFullPath((Join-Path $Root $Path))
+    $RootPrefix = $Root
+    if (-not $RootPrefix.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $RootPrefix = "$RootPrefix$([System.IO.Path]::DirectorySeparatorChar)"
+    }
+    if ($FullPath -eq $Root -or -not $FullPath.StartsWith($RootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "$Name must resolve below the repository root: $Path"
+    }
+    return $FullPath
+}
+
+$ReleaseDir = Resolve-RepoRelativeOutputPath -Path $OutDir -Name "OutDir"
 
 function Resolve-Repository {
     $Remote = (git -C $Root remote get-url origin).Trim()
@@ -101,11 +118,6 @@ foreach ($Artifact in $Artifacts) {
     }
 }
 
-$GhCommand = Get-Command gh -ErrorAction SilentlyContinue
-if (-not $GhCommand) {
-    throw "GitHub CLI not found. Install gh and run gh auth login."
-}
-
 $NotesFile = Join-Path $ReleaseDir "release-notes-$ShortHash.md"
 $Notes = @(
     "# Kanojo demo build $ShortHash"
@@ -115,19 +127,42 @@ $Notes = @(
     "- Portable desktop: ``kanojo-desktop-portable-$ShortHash.zip``"
     "- Checksums: ``SHA256SUMS-$ShortHash.txt``"
     ""
+    "## Verify"
+    ""
+    "Download the source archive, portable desktop zip, and checksum file. From the repository root or extracted source archive, verify the portable package with:"
+    ""
+    '```powershell'
+    "Get-FileHash .\release\kanojo-desktop-portable-$ShortHash.zip -Algorithm SHA256"
+    "Get-Content .\release\SHA256SUMS-$ShortHash.txt"
+    '```'
+    ""
     "## Run"
     ""
-    "1. Start the backend with ``scripts\start_backend.ps1 -BindAddress 0.0.0.0``."
-    "2. Extract ``kanojo-desktop-portable-$ShortHash.zip``."
-    "3. Run ``Kanojo.exe`` from the extracted portable directory."
+    "Start the backend first:"
+    ""
+    '```powershell'
+    ".\scripts\start_backend.ps1 -BindAddress 0.0.0.0"
+    '```'
+    ""
+    "Then install the portable desktop build for the current Windows user:"
+    ""
+    '```powershell'
+    ".\scripts\install_windows_desktop_portable.ps1 -Archive .\release\kanojo-desktop-portable-$ShortHash.zip"
+    '```'
+    ""
+    "The installer validates ``Kanojo.exe`` and creates a Start Menu shortcut by default. For a manual run, extract the portable zip and launch ``Kanojo.exe`` from the extracted directory."
+    ""
+    "## Showcase package"
+    ""
+    "Generate a reviewable demo package with screenshots, evaluation report, talk track, recording plan, and slideshow fallback:"
+    ""
+    '```powershell'
+    ".\scripts\build_showcase_package.ps1 -OutDir exports-showcase-package"
+    '```'
+    ""
+    "Open ``exports-showcase-package\SHOWCASE_INDEX.md`` first. Key generated files include ``demo-talk-track.md``, ``recording-plan.md``, and ``showcase-slideshow.mp4`` when ``ffmpeg`` is available."
 )
 Set-Content -LiteralPath $NotesFile -Encoding UTF8 -Value $Notes
-
-$ReleaseExists = $false
-if (-not $DryRun) {
-    & gh auth status --hostname github.com | Out-Null
-    $ReleaseExists = Test-GitHubReleaseExists -ReleaseTag $Tag -Repo $Repository
-}
 
 if ($DryRun) {
     [pscustomobject]@{
@@ -143,6 +178,15 @@ if ($DryRun) {
     } | ConvertTo-Json -Depth 5
     exit 0
 }
+
+$GhCommand = Get-Command gh -ErrorAction SilentlyContinue
+if (-not $GhCommand) {
+    throw "GitHub CLI not found. Install gh and run gh auth login."
+}
+
+$ReleaseExists = $false
+& gh auth status --hostname github.com | Out-Null
+$ReleaseExists = Test-GitHubReleaseExists -ReleaseTag $Tag -Repo $Repository
 
 if ($ReleaseExists) {
     $EditArgs = @("release", "edit", $Tag, "--repo", $Repository, "--title", $Title, "--notes-file", $NotesFile)

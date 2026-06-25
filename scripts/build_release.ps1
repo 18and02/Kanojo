@@ -4,8 +4,25 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$Root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
-$ReleaseDir = Join-Path $Root $OutDir
+$Root = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
+
+function Resolve-RepoRelativeOutputPath {
+    param([string]$Path, [string]$Name)
+    if ([System.IO.Path]::IsPathRooted($Path)) {
+        throw "$Name must be relative to the repository root."
+    }
+    $FullPath = [System.IO.Path]::GetFullPath((Join-Path $Root $Path))
+    $RootPrefix = $Root
+    if (-not $RootPrefix.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $RootPrefix = "$RootPrefix$([System.IO.Path]::DirectorySeparatorChar)"
+    }
+    if ($FullPath -eq $Root -or -not $FullPath.StartsWith($RootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "$Name must resolve below the repository root: $Path"
+    }
+    return $FullPath
+}
+
+$ReleaseDir = Resolve-RepoRelativeOutputPath -Path $OutDir -Name "OutDir"
 $Desktop = Join-Path $Root "desktop"
 $Python = Join-Path $Root "backend\.venv\Scripts\python.exe"
 $BundledPnpm = Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\bin\pnpm.cmd"

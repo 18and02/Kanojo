@@ -141,3 +141,6 @@ GitHub draft release 清理预览:
 - 演示讲稿:新增 `scripts/write_demo_talk_track.ps1`,素材包默认生成 `demo-talk-track.md`,用于答辩三分钟节奏、旁白要点和追问短答。
 - 录屏兜底:新增 `scripts/build_showcase_recording.ps1`,有 `ffmpeg` 时将截图合成为 `showcase-slideshow.mp4`,否则生成 `recording-plan.md`。
 - Portable 安装:新增 `scripts/install_windows_desktop_portable.ps1` 与 `scripts/uninstall_windows_desktop_portable.ps1`,支持当前用户目录安装、开始菜单快捷方式和安全卸载。
+- Release 说明: `scripts/publish_github_release.ps1` 现在生成包含 checksum 校验、后端启动、portable 安装和展示素材包命令的 draft release notes。
+- 交付脚本安全: release、portable、展示包、截图、评测报告、讲稿和录屏脚本统一限制输出目录必须落在仓库内;`publish_github_release.ps1 -DryRun` 可在无 GitHub CLI 时本地预览 release notes。
+- 输出文件名安全:评测报告、演示讲稿和录屏兜底脚本的 `ReportName` / `OutFile` 只接受纯文件名,拒绝绝对路径和路径穿越片段。

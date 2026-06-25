@@ -5,12 +5,44 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$Root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
-if ([System.IO.Path]::IsPathRooted($OutDir)) {
-    $Target = Resolve-Path -LiteralPath $OutDir
-} else {
-    $Target = Resolve-Path -LiteralPath (Join-Path $Root $OutDir)
+$Root = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
+
+function Assert-LeafOutputFileName {
+    param([string]$FileName, [string]$Name)
+    if ([string]::IsNullOrWhiteSpace($FileName)) {
+        throw "$Name must not be empty."
+    }
+    if ([System.IO.Path]::IsPathRooted($FileName) -or $FileName -match "[\\/]" -or $FileName -in @(".", "..")) {
+        throw "$Name must be a file name, not a path: $FileName"
+    }
+    if ($FileName.IndexOfAny([System.IO.Path]::GetInvalidFileNameChars()) -ge 0) {
+        throw "$Name contains invalid file name characters: $FileName"
+    }
+    return $FileName
 }
+
+function Resolve-RepoOutputPath {
+    param([string]$Path, [string]$Name)
+    if ([System.IO.Path]::IsPathRooted($Path)) {
+        $FullPath = [System.IO.Path]::GetFullPath($Path)
+    } else {
+        $FullPath = [System.IO.Path]::GetFullPath((Join-Path $Root $Path))
+    }
+    $RootPrefix = $Root
+    if (-not $RootPrefix.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $RootPrefix = "$RootPrefix$([System.IO.Path]::DirectorySeparatorChar)"
+    }
+    if ($FullPath -eq $Root -or -not $FullPath.StartsWith($RootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "$Name must resolve below the repository root: $Path"
+    }
+    if (-not (Test-Path -LiteralPath $FullPath)) {
+        throw "$Name does not exist: $FullPath"
+    }
+    return $FullPath
+}
+
+$Target = Resolve-RepoOutputPath -Path $OutDir -Name "OutDir"
+$ReportName = Assert-LeafOutputFileName -FileName $ReportName -Name "ReportName"
 
 function Read-JsonFile {
     param([string]$FileName)
@@ -85,7 +117,7 @@ $Lines = [System.Collections.Generic.List[string]]::new()
 $Lines.Add("# Kanojo Evaluation Report")
 $Lines.Add("")
 $Lines.Add("- Generated at: $GeneratedAt")
-$Lines.Add("- Source directory: ``" + $Target.Path + "``")
+$Lines.Add("- Source directory: ``" + $Target + "``")
 $Lines.Add("")
 $Lines.Add("## Node Baseline")
 $Lines.Add("")

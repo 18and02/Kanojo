@@ -8,9 +8,28 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
+$RootPath = $Root.Path
 $Desktop = Join-Path $Root "desktop"
 $BundledPnpm = Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\bin\pnpm.cmd"
 $BundledNode = Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"
+
+function Resolve-RepoRelativeOutputPath {
+    param([string]$Path, [string]$Name)
+    if ([System.IO.Path]::IsPathRooted($Path)) {
+        throw "$Name must be relative to the repository root."
+    }
+    $FullPath = [System.IO.Path]::GetFullPath((Join-Path $RootPath $Path))
+    $RootPrefix = $RootPath
+    if (-not $RootPrefix.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $RootPrefix = "$RootPrefix$([System.IO.Path]::DirectorySeparatorChar)"
+    }
+    if ($FullPath -eq $RootPath -or -not $FullPath.StartsWith($RootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "$Name must resolve below the repository root: $Path"
+    }
+    return $FullPath
+}
+
+$Target = Resolve-RepoRelativeOutputPath -Path $OutDir -Name "OutDir"
 
 $PnpmCommand = Get-Command pnpm -ErrorAction SilentlyContinue
 if ($PnpmCommand) {
@@ -62,7 +81,7 @@ try {
 }
 
 if (-not $Existing) {
-    $LogDir = Join-Path $Root $OutDir
+    $LogDir = $Target
     New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
     $ViteOutLog = Join-Path $LogDir "vite.stdout.log"
     $ViteErrLog = Join-Path $LogDir "vite.stderr.log"
@@ -92,7 +111,7 @@ if (-not $Existing) {
 try {
     & $Node (Join-Path $Root "scripts\capture_showcase_screenshots.cjs") `
         --url $BaseUrl `
-        --out (Join-Path $Root $OutDir) `
+        --out $Target `
         --browser $Browser `
         --remote-port "$RemoteDebuggingPort"
 } finally {

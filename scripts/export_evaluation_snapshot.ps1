@@ -6,8 +6,26 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$Root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
-$Target = Join-Path $Root $OutDir
+$Root = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
+
+function Resolve-RepoOutputPath {
+    param([string]$Path, [string]$Name)
+    if ([System.IO.Path]::IsPathRooted($Path)) {
+        $FullPath = [System.IO.Path]::GetFullPath($Path)
+    } else {
+        $FullPath = [System.IO.Path]::GetFullPath((Join-Path $Root $Path))
+    }
+    $RootPrefix = $Root
+    if (-not $RootPrefix.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $RootPrefix = "$RootPrefix$([System.IO.Path]::DirectorySeparatorChar)"
+    }
+    if ($FullPath -eq $Root -or -not $FullPath.StartsWith($RootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "$Name must resolve below the repository root: $Path"
+    }
+    return $FullPath
+}
+
+$Target = Resolve-RepoOutputPath -Path $OutDir -Name "OutDir"
 New-Item -ItemType Directory -Force -Path $Target | Out-Null
 
 $Base = $BaseUrl.TrimEnd("/")
