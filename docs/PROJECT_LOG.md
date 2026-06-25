@@ -482,9 +482,10 @@
 ### Goal 继续优化循环: 演示讲稿素材
 
 - 新增 `scripts/write_demo_talk_track.ps1`,读取素材包中的节点状态、评测摘要、记忆名片和截图 manifest,生成 `demo-talk-track.md`。
+- 新增 `docs/templates/DEMO_TALK_TRACK.zh.md`,把中文讲稿正文从 PowerShell 脚本中拆出,避免 Windows PowerShell 对无 BOM UTF-8 脚本源码的解析问题。
 - `scripts/build_showcase_package.ps1` 默认调用讲稿生成脚本,并把讲稿写入 `showcase-package.json` 与 `SHOWCASE_INDEX.md`。
 - 讲稿内容包含演示前检查、当前证据摘要、三分钟演示节奏、分段旁白、截图索引和常见追问短答。
 - `docs/SHOWCASE_PACKAGE.md` 与 `docs/FINAL_SELF_CHECK.md` 增加讲稿入口和后续优先级调整。
 - 自检:
   - PowerShell 语法检查: passed
-  - `.\scripts\build_showcase_package.ps1 -OutDir exports-showcase-talk-track-test`: passed,生成 `demo-talk-track.md`,并进入索引和 manifest。
+  - `.\scripts\build_showcase_package.ps1 -OutDir exports-showcase-talk-track-zh-test`: passed,生成中文 `demo-talk-track.md`,并进入索引和 manifest。

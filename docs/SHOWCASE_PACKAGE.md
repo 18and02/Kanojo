@@ -125,6 +125,8 @@ exports-showcase-package/docs/
 .\scripts\write_demo_talk_track.ps1 -PackageDir exports-showcase-package
 ```
 
+默认讲稿模板位于 `docs\templates\DEMO_TALK_TRACK.zh.md`;需要临时改讲法时,可复制模板后用 `-Template` 指向自定义版本。
+
 ## PC 后端登录自启
 
 PC 可以把后端注册到当前用户的 Startup 文件夹。该方式不需要管理员权限,登录后会启动 `start_backend.ps1`,默认监听 `0.0.0.0:8787`,并沿用启动预热逻辑:
