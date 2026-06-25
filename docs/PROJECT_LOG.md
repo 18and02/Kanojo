@@ -501,3 +501,14 @@
   - `.\scripts\build_showcase_recording.ps1 -PackageDir exports-showcase-talk-track-zh-test`: passed,生成 `showcase-slideshow.mp4`。
   - `ffmpeg -v error -i ...\showcase-slideshow.mp4 -f null -`: passed。
   - `.\scripts\build_showcase_package.ps1 -OutDir exports-showcase-recording-test`: passed,manifest 中 `recording.video_created=true`。
+
+### Goal 继续优化循环: Windows portable 安装闭环
+
+- 新增 `scripts/install_windows_desktop_portable.ps1`,默认选择最新 `release/kanojo-desktop-portable-*.zip`,安装到当前用户 `%LOCALAPPDATA%\Kanojo\Desktop\<package>`。
+- 安装脚本会验证 `Kanojo.exe`,并默认创建开始菜单快捷方式;可用 `-DesktopShortcut` 额外创建桌面快捷方式,用 `-NoShortcuts` 做无副作用验证。
+- 新增 `scripts/uninstall_windows_desktop_portable.ps1`,用于删除当前用户 portable 安装和快捷方式;非默认根目录需要显式 `-AllowCustomRoot`。
+- `docs/SHOWCASE_PACKAGE.md` 与 `docs/FINAL_SELF_CHECK.md` 增加 portable 安装/卸载说明。
+- 自检:
+  - PowerShell 语法检查: passed
+  - `.\scripts\install_windows_desktop_portable.ps1 -Archive release\kanojo-desktop-portable-b42ecac.zip -InstallRoot exports-portable-install-test -NoShortcuts`: passed,验证安装目录内存在 `Kanojo.exe`。
+  - `.\scripts\uninstall_windows_desktop_portable.ps1 -InstallRoot exports-portable-install-test -AllowCustomRoot`: passed,测试安装目录已清理。

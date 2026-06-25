@@ -88,6 +88,12 @@ cd "G:\Codex env\Kanojo"
 .\scripts\build_release.ps1
 ```
 
+把最新桌面 portable 包安装到当前用户目录:
+
+```powershell
+.\scripts\install_windows_desktop_portable.ps1
+```
+
 生成答辩演示素材包:
 
 ```powershell

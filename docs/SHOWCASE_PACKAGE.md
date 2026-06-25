@@ -178,6 +178,18 @@ desktop/out/
 .\scripts\start_backend.ps1 -BindAddress 0.0.0.0
 ```
 
+也可以把最新 portable 包安装到当前用户目录并创建开始菜单快捷方式:
+
+```powershell
+.\scripts\install_windows_desktop_portable.ps1
+```
+
+安装脚本默认从 `release/` 里选择最新 `kanojo-desktop-portable-*.zip`,解压到 `%LOCALAPPDATA%\Kanojo\Desktop\<package>`,并把快捷方式指向 `Kanojo.exe`。卸载当前用户的 portable 安装:
+
+```powershell
+.\scripts\uninstall_windows_desktop_portable.ps1
+```
+
 也可以只生成桌面 portable 包:
 
 ```powershell
