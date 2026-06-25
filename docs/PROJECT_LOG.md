@@ -468,3 +468,13 @@
 - 自检:
   - PowerShell 语法检查: passed
   - `.\scripts\build_showcase_package.ps1 -OutDir exports-showcase-package-test`: passed,生成索引、评测报告、截图、文档副本和 release 哈希索引。
+
+### Goal 继续优化循环: GitHub draft release 清理预览
+
+- 新增 `scripts/prune_github_draft_releases.ps1`,用于列出匹配 `kanojo-<commit>` 的 GitHub draft release 并按时间保留最新若干个。
+- 默认 dry-run,只输出 `kept` 和 `prune_candidates`;只有显式传入 `-Apply` 才会删除旧 draft release。
+- 可选 `-CleanupTag` 用于执行删除时同步清理 tag,默认不启用。
+- `docs/SHOWCASE_PACKAGE.md` 与 `docs/FINAL_SELF_CHECK.md` 增加清理预览命令。
+- 自检:
+  - PowerShell 语法检查: passed
+  - `.\scripts\prune_github_draft_releases.ps1 -Keep 2`: passed,当前匹配 5 个 draft,建议保留 2 个、清理 3 个;未执行删除。

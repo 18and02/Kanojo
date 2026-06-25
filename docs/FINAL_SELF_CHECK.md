@@ -66,6 +66,12 @@ release 打包:
 .\scripts\build_showcase_package.ps1 -OutDir exports-showcase-package
 ```
 
+GitHub draft release 清理预览:
+
+```powershell
+.\scripts\prune_github_draft_releases.ps1 -Keep 2
+```
+
 ## 2026-06-24 最终验证结果
 
 - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 42 passed
@@ -125,3 +131,4 @@ release 打包:
 - 采集实现:使用本机 Edge/Chrome DevTools Protocol,不依赖 Playwright 浏览器包;截图后会清理临时浏览器用户目录和后台子进程。
 - 展示包装: `docs/SHOWCASE_PACKAGE.md` 增加截图采集命令、输出文件和 `-EnsureBackend` 用法。
 - 素材整合:新增 `scripts/build_showcase_package.ps1`,把截图、评测报告、关键文档副本和 release SHA256 汇总到 `exports-showcase-package/`。
+- Release 治理:新增 `scripts/prune_github_draft_releases.ps1`,默认 dry-run 预览旧 GitHub draft release,显式 `-Apply` 后才会删除。

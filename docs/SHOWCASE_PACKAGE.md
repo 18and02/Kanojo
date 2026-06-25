@@ -185,6 +185,14 @@ Get-FileHash .\release\kanojo-desktop-portable-<commit>.zip -Algorithm SHA256
 .\scripts\publish_github_release.ps1 -SkipBuild -DryRun
 ```
 
+查看 GitHub draft release 清理建议:
+
+```powershell
+.\scripts\prune_github_draft_releases.ps1 -Keep 2
+```
+
+该命令默认 dry-run,只输出将保留和建议清理的草稿。只有显式加 `-Apply` 才会删除旧 draft release;如还要同步删除对应 tag,再加 `-CleanupTag`。
+
 ## 评测报告
 
 导出评测数据时会同步生成 Markdown 摘要:
