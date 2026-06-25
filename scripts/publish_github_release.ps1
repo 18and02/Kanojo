@@ -24,6 +24,28 @@ function Resolve-Repository {
     throw "Cannot infer GitHub repository from origin: $Remote. Pass -Repository owner/name."
 }
 
+function Test-GitHubReleaseExists {
+    param(
+        [string]$ReleaseTag,
+        [string]$Repo
+    )
+    $StdOut = [System.IO.Path]::GetTempFileName()
+    $StdErr = [System.IO.Path]::GetTempFileName()
+    try {
+        $Process = Start-Process `
+            -FilePath $GhCommand.Source `
+            -ArgumentList @("release", "view", $ReleaseTag, "--repo", $Repo) `
+            -NoNewWindow `
+            -PassThru `
+            -RedirectStandardOutput $StdOut `
+            -RedirectStandardError $StdErr `
+            -Wait
+        return $Process.ExitCode -eq 0
+    } finally {
+        Remove-Item -LiteralPath $StdOut, $StdErr -Force -ErrorAction SilentlyContinue
+    }
+}
+
 if (-not $Repository) {
     $Repository = Resolve-Repository
 }
@@ -78,8 +100,7 @@ Set-Content -LiteralPath $NotesFile -Encoding UTF8 -Value $Notes
 $ReleaseExists = $false
 if (-not $DryRun) {
     & gh auth status --hostname github.com | Out-Null
-    & gh release view $Tag --repo $Repository *> $null
-    $ReleaseExists = $LASTEXITCODE -eq 0
+    $ReleaseExists = Test-GitHubReleaseExists -ReleaseTag $Tag -Repo $Repository
 }
 
 if ($DryRun) {
