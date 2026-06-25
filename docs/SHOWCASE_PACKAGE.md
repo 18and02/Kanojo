@@ -184,6 +184,8 @@ desktop/out/
 .\scripts\start_backend.ps1 -BindAddress 0.0.0.0
 ```
 
+使用 `-Restart` 时,脚本只会停止命令行可识别为 `uvicorn kanojo_agent.main:app` 的 Kanojo 后端进程。如果 8787 端口被其他服务占用,脚本会拒绝停止该进程并提示先手动排查。
+
 也可以把最新 portable 包安装到当前用户目录并创建开始菜单快捷方式:
 
 ```powershell

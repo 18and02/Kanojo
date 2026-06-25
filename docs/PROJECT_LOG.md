@@ -582,6 +582,21 @@
   - 全量 PowerShell 语法检查: passed。
   - `git diff --check`: passed,仅提示工作区文件下次 Git 触碰时会转换为 CRLF。
 
+### Goal 继续优化循环: 后端重启进程识别
+
+- `scripts/start_backend.ps1 -Restart` 不再无条件停止占用目标端口的进程。
+- 重启前会读取端口占用进程命令行,只有包含 `uvicorn` 和 `kanojo_agent.main:app` 的 Kanojo 后端进程才会被停止。
+- 若端口被非 Kanojo 服务占用,脚本会报错并保留该进程,避免演示机上误杀其他本地服务。
+- `docs/SHOWCASE_PACKAGE.md` 与 `docs/FINAL_SELF_CHECK.md` 补充重启安全说明。
+- 自检:
+  - `scripts\start_backend.ps1` 语法检查: passed。
+  - 临时 `python -m http.server` 占用随机端口后执行 `.\scripts\start_backend.ps1 -Port <port> -Restart -SkipPrewarm`: correctly rejected,临时进程未被停止。
+  - `backend\.venv\Scripts\python.exe -m pytest backend\tests`: 48 passed。
+  - `backend\.venv\Scripts\python.exe -m ruff check backend`: passed。
+  - bundled `pnpm build` in `desktop/`: passed。
+  - 全量 PowerShell 语法检查: passed。
+  - `git diff --check`: passed,仅提示工作区文件下次 Git 触碰时会转换为 CRLF。
+
 ### Goal 继续优化循环: portable 卸载递归删除边界
 
 - `scripts/uninstall_windows_desktop_portable.ps1` 默认卸载路径收紧为当前用户 `%LOCALAPPDATA%\Kanojo\Desktop` 的精确路径。
