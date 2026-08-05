@@ -1,10 +1,7 @@
 param(
     [string[]]$Candidates = @(
         "http://kanojo-mac.local:8787",
-        "http://kanojo-mac-alt.local:8787",
-        "http://kanojo-mac.local:8787",
-        "http://kanojo-pc.local:8787",
-        "http://kanojo-pc-alt.local:8787"
+        "http://kanojo-pc.local:8787"
     ),
     [ValidateSet("mac_home", "pc_inference")]
     [string]$PreferredRole = "mac_home",

@@ -2,13 +2,17 @@ import { contextBridge, ipcRenderer } from "electron";
 
 const backendBaseUrl = "http://127.0.0.1:8787";
 const peerScanTimeoutMs = 3000;
-const defaultPeerScanCandidates = [
-  "http://kanojo-mac.local:8787",
-  "http://kanojo-mac-alt.local:8787",
-  "http://kanojo-mac.local:8787",
-  "http://kanojo-pc.local:8787",
-  "http://kanojo-pc-alt.local:8787"
-];
+// LAN peer candidates, tried in order during peer discovery.
+// Point these at your own machines via KANOJO_PEER_CANDIDATES
+// (comma-separated base URLs), e.g.
+//   KANOJO_PEER_CANDIDATES="http://192.168.1.20:8787,http://my-pc.local:8787"
+const defaultPeerScanCandidates = (
+  process.env.KANOJO_PEER_CANDIDATES ??
+  "http://kanojo-mac.local:8787,http://kanojo-pc.local:8787"
+)
+  .split(",")
+  .map((entry) => entry.trim())
+  .filter(Boolean);
 
 type EvaluationRecordRequest = {
   event_type: string;

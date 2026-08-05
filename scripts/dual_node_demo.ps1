@@ -1,6 +1,6 @@
 param(
-    [string]$PcBase = "http://kanojo-pc.local:8787",
-    [string]$MacBase = "http://kanojo-mac.local:8787",
+    [string]$PcBase = $(if ($env:KANOJO_PC_BASE_URL) { $env:KANOJO_PC_BASE_URL } else { "http://kanojo-pc.local:8787" }),
+    [string]$MacBase = $(if ($env:KANOJO_MAC_BASE_URL) { $env:KANOJO_MAC_BASE_URL } else { "http://kanojo-mac.local:8787" }),
     [switch]$SkipChat,
     [switch]$WritebackTest,
     [switch]$CleanupAfterWrite

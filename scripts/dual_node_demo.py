@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from typing import Any
@@ -10,8 +11,14 @@ from urllib import error, request
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run Kanojo dual-node demo checks.")
-    parser.add_argument("--pc-base", default="http://kanojo-pc.local:8787")
-    parser.add_argument("--mac-base", default="http://kanojo-mac.local:8787")
+    parser.add_argument(
+        "--pc-base",
+        default=os.environ.get("KANOJO_PC_BASE_URL", "http://kanojo-pc.local:8787"),
+    )
+    parser.add_argument(
+        "--mac-base",
+        default=os.environ.get("KANOJO_MAC_BASE_URL", "http://kanojo-mac.local:8787"),
+    )
     parser.add_argument("--timeout", type=float, default=240)
     parser.add_argument("--skip-chat", action="store_true")
     parser.add_argument("--writeback-test", action="store_true")

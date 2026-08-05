@@ -580,13 +580,15 @@ declare global {
 
 const backendBaseUrl = "http://127.0.0.1:8787";
 const peerScanTimeoutMs = 3000;
-const defaultPeerScanCandidates = [
-  "http://kanojo-mac.local:8787",
-  "http://kanojo-mac-alt.local:8787",
-  "http://kanojo-mac.local:8787",
-  "http://kanojo-pc.local:8787",
-  "http://kanojo-pc-alt.local:8787"
-];
+// Browser-fallback peer candidates. Override at build time with
+// VITE_KANOJO_PEER_CANDIDATES (comma-separated base URLs).
+const defaultPeerScanCandidates = (
+  (import.meta.env.VITE_KANOJO_PEER_CANDIDATES as string | undefined) ??
+  "http://kanojo-mac.local:8787,http://kanojo-pc.local:8787"
+)
+  .split(",")
+  .map((entry) => entry.trim())
+  .filter(Boolean);
 
 const browserBackendApi: KanojoApi = {
   chat: async (text: string) => {

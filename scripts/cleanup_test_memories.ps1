@@ -1,5 +1,5 @@
 param(
-    [string]$BaseUrl = "http://kanojo-mac.local:8787",
+    [string]$BaseUrl = $(if ($env:KANOJO_MAC_BASE_URL) { $env:KANOJO_MAC_BASE_URL } else { "http://kanojo-mac.local:8787" }),
     [switch]$Apply
 )
 

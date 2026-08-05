@@ -4,12 +4,12 @@
 
 ## 当前已知信息
 
-- GitHub 私有仓库: `https://github.com/18and02/Kanojo.git`
-- Mac mini 主机名: `kanojo-mac.local`
+- GitHub 仓库: `https://github.com/18and02/Kanojo.git`
+- Mac mini 主机名: `kanojo-mac.local`(示例;换成你自己的 mDNS 名或局域网 IP)
 - Mac mini 局域网 IP:
-  - `en0`: `kanojo-mac.local`
-  - `en1`: `kanojo-mac-alt.local`
-- 建议优先用 `kanojo-mac.local` 做 PC 访问地址。
+  - `en0`: `<MAC_LAN_IP>`
+  - `en1`: `<MAC_LAN_IP_ALT>`
+- 建议优先用 `en0` 的地址(或 `kanojo-mac.local`)做 PC 访问地址。
 - 后端端口: `8787`
 - Mac 侧目标项目路径: `~/Projects/Kanojo`
 - Mac 侧目标后端路径: `~/Projects/Kanojo/backend`

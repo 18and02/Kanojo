@@ -54,10 +54,7 @@ if [[ "$#" -gt 0 ]]; then
 else
     CANDIDATES=(
         "http://kanojo-mac.local:8787"
-        "http://kanojo-mac-alt.local:8787"
-        "http://kanojo-mac.local:8787"
         "http://kanojo-pc.local:8787"
-        "http://kanojo-pc-alt.local:8787"
     )
 fi
 
