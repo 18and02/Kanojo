@@ -1,5 +1,7 @@
 # AI Memory Card Desktop Agent
 
+[中文](README.md) | [English](README.en.md)
+
 本仓库是毕业设计《面向长期陪伴的记忆驱动主动交互式桌面智能体设计、实现与评测》的项目工作区。
 
 当前技术方案状态为 **P5 双机常驻闭环已完成**: Windows 单机、文字/语音输入、LLM 回复、持久记忆、主动心跳、TTS 输出、barge-in、Live2D 形象、形象侧评测埋点、可回看的记忆名片视图、Markdown / JSON 导出、版本快照和反思摘要已接入。Mac 常驻记忆源 + PC 重推理节点已具备节点身份、peer 健康检查、只读远端记忆 artifact、策略化记忆写入路由、聊天推理路由和低频活动感知。P5 收口见 `docs\P5_CLOSEOUT.md`。
